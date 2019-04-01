@@ -1,0 +1,16 @@
+{
+    "background": 0,
+    "c_algae_macro_or_leaves": 19,
+    "c_fire_coral_millepora": 39,
+    "c_hard_coral_boulder": 58,
+    "c_hard_coral_branching": 78,
+    "c_hard_coral_encrusting": 98,
+    "c_hard_coral_foliose": 117,
+    "c_hard_coral_mushroom": 137,
+    "c_hard_coral_submassive": 156,
+    "c_hard_coral_table": 176,
+    "c_soft_coral": 196,
+    "c_soft_coral_gorgonian": 215,
+    "c_sponge": 235,
+    "c_sponge_barrel": 255
+}
