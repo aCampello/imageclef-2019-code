@@ -177,11 +177,11 @@ if __name__ == "__main__":
 
     files_train, files_valid = calculate_split(mask_folder_path, colour_mapping)
 
-    data_train = [{"image_name": os.path.join("images", name[:-9] + ".jpg"),
+    data_train = [{"image_name": os.path.join("images", name[:-9] + ".JPG"),
                    "mask_name": os.path.join("masks", name)}
                   for name in files_train]
 
-    data_val = [{"image_name": os.path.join("images", name[:-9] + ".jpg"),
+    data_val = [{"image_name": os.path.join("images", name[:-9] + ".JPG"),
                  "mask_name": os.path.join("masks", name)}
                 for name in files_valid]
 
