@@ -39,13 +39,18 @@ class DictArrayDataSet(Dataset):
     def load_nn_target(self, index):
         item = self.image_data[index]
         file_path_mask = os.path.join(self.image_base_dir, item[STR.MASK_NAME])
-        mask = load_image(file_path_mask)
+        mask = load_image(file_path_mask)[:, :, 0]
 
-        # create one-hot-encoding
-        one_hot = np.zeros(mask.shape[:2] + (self.num_classes(),))
+        # catch the future warning warning
+        # https://stackoverflow.com/questions/40659212/futurewarning-elementwise-comparison-failed-returning-scalar-but-in-the-futur
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=FutureWarning)
 
-        for i, c in enumerate(self.colour_mapping.keys()):
-            one_hot[mask == c, i] = 1
+            # create one-hot-encoding
+            one_hot = np.zeros(mask.shape[:2] + (self.num_classes(),))
+
+            for i, c in enumerate(self.colour_mapping.keys()):
+                one_hot[mask == c, i] = 1
 
         return one_hot
 
