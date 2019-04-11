@@ -52,7 +52,7 @@ class DictArrayDataSet(Dataset):
             for i, c in enumerate(self.colour_mapping.keys()):
                 one_hot[mask == c, i] = 1
 
-        return mask
+        return one_hot
 
     def __getitem__(self, index):
         image = self.load_nn_input(index)
@@ -114,14 +114,14 @@ class Resize:
             nn_target = [nn_target]
             created_list = True
 
-        out_image = np.zeros((len(nn_input), self.size, self.size, 3)).astype(nn_input[0].dtype)
-        out_mask = np.zeros((len(nn_input), self.size, self.size)).astype(nn_target[0].dtype)
+        out_image = np.zeros((len(nn_input), self.size, self.size, nn_input[0].shape[2])).astype(nn_input[0].dtype)
+        out_mask = np.zeros((len(nn_input), self.size, self.size, nn_target[0].shape[2])).astype(nn_target[0].dtype)
 
         for i, (image, mask) in enumerate(zip(nn_input, nn_target)):
             factor = self.size / image.shape[0]
 
             scaled_image = zoom(image, [factor, factor, 1], order=1)
-            scaled_mask = zoom(mask, [factor, factor], order=0)
+            scaled_mask = zoom(mask, [factor, factor, 1], order=0)
 
             out_image[i, :scaled_image.shape[0], :scaled_image.shape[1]] = scaled_image
             out_mask[i, :scaled_mask.shape[0], :scaled_mask.shape[1]] = scaled_mask
@@ -134,3 +134,59 @@ class Resize:
         sample[STR.NN_TARGET] = out_mask
 
         return sample
+
+
+class ToTensor:
+    """
+    Transforms a sample to a PyTorch tensor
+    """
+
+    def __init__(self):
+        pass
+
+    def __call__(self, sample):
+        """
+
+        :param sample:
+        :return:
+        """
+        nn_input = sample[STR.NN_INPUT]
+        nn_target = sample[STR.NN_TARGET]
+
+        ordering = [2, 0, 1] if nn_input.ndim == 3 else [0, 3, 1, 2]
+
+        sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering))
+        sample[STR.NN_TARGET] = torch.from_numpy(nn_target.transpose(*ordering))
+
+        return sample
+
+
+def custom_collate(samples):
+    """
+    The normal collate function concatenates the tensors along a NEW first axis to create batch objects. This method can
+    deal with objects that already have four dimensions - it concatenates them along the EXISTING first axis
+    :param samples: List of sample objects
+    :return: Sample with batch objects
+    """
+    out_batch_images = []
+    out_batch_masks = []
+
+    for sample in samples:
+        nn_input = sample[STR.NN_INPUT]
+        nn_target = sample[STR.NN_TARGET]
+
+        # if objects only have 3 dimensions, create additional one
+        if len(nn_input.shape) == 3:
+            nn_input.unsqueeze(axis=0)
+            nn_target.expand_dims(axis=0)
+
+        # concatenate objects
+        for i in range(nn_input.shape[0]):
+            out_batch_images.append(nn_input[i])
+            out_batch_masks.append(nn_target[i])
+
+    # create batch tensor
+    out_batch_images = torch.stack(out_batch_images)
+    out_batch_masks = torch.stack(out_batch_masks)
+
+    return {STR.NN_INPUT: out_batch_images, STR.NN_TARGET: out_batch_masks}
