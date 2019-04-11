@@ -17,7 +17,7 @@ def plot_data(image, mask, colour_mapping):
     plt.imshow(image)
 
     cax = plt.imshow(mask, cmap="jet", alpha=0.5)
-    plt.axis("off")
+    # plt.axis("off")
 
     colour_ticks = [colour_mapping[c] for c in colour_mapping.keys()]
 
