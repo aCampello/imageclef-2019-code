@@ -60,6 +60,9 @@ class DictArrayDataSet(Dataset):
 
 
 class RandomCrop:
+    """
+    Randomly crop multiple sections within the given [min_size, max_size] from an image.
+    """
 
     def __init__(self, min_size, max_size, crop_count=5):
         self.min_size = min_size
@@ -87,6 +90,43 @@ class RandomCrop:
 
         sample[STR.NN_INPUT] = nn_inputs
         sample[STR.NN_TARGET] = nn_targets
+
+        return sample
+
+
+class Flip:
+    """
+    Flips numpy arrays randomly horizontally and vertically
+    """
+
+    def __int__(self):
+        pass
+
+    def __call__(self, sample):
+        nn_input = sample[STR.NN_INPUT]
+        nn_target = sample[STR.NN_TARGET]
+
+        if nn_input.ndim == 4:
+
+            flip_vertical = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
+            nn_input[flip_vertical] = nn_input[flip_vertical, ::-1, :, :]
+            nn_target[flip_vertical] = nn_target[flip_vertical, ::-1, :, :]
+
+            flip_horizontal = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
+            nn_input[flip_horizontal] = nn_input[flip_horizontal, :, ::-1, :]
+            nn_target[flip_horizontal] = nn_target[flip_horizontal, :, ::-1, :]
+
+        else:
+            if np.random.rand() > 0.5:
+                nn_input = nn_input[::-1, :, :]
+                nn_target = nn_target[::-1, :, :]
+
+            if np.random.rand() > 0.5:
+                nn_input = nn_input[:, :-1, :]
+                nn_target = nn_target[:, :-1, :]
+
+        sample[STR.NN_INPUT] = nn_input
+        sample[STR.NN_TARGET] = nn_target
 
         return sample
 
