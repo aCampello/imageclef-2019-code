@@ -28,6 +28,19 @@ installation:
 	source activate coral_reef
 	```
 
+# install pytorch
+	---- Cuda available, Cuda version 9.0: ----
+	```	
+	conda install pytorch torchvision cudatoolkit=9.0 -c pytorch
+	```
+    
+    OR
+    
+	---- Cuda not available: ---
+	```	
+	conda install pytorch-cpu torchvision-cpu -c pytorch
+	```
+
 # install requirements
 	```
 	pip install --upgrade pip
