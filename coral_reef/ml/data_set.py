@@ -9,6 +9,7 @@ import torch
 from torch.utils.data import Dataset
 
 from coral_reef.constants import strings as STR
+from coral_reef.ml import utils as ml_utils
 
 
 def load_image(filepath):
@@ -41,16 +42,7 @@ class DictArrayDataSet(Dataset):
         file_path_mask = os.path.join(self.image_base_dir, item[STR.MASK_NAME])
         mask = load_image(file_path_mask)[:, :, 0]
 
-        # catch the future warning warning
-        # https://stackoverflow.com/questions/40659212/futurewarning-elementwise-codefault_collatemparison-failed-returning-scalar-but-in-the-futur
-        with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=FutureWarning)
-
-            # create one-hot-encoding
-            one_hot = np.zeros(mask.shape[:2] + (self.num_classes(),))
-
-            for i, c in enumerate(self.colour_mapping.keys()):
-                one_hot[mask == c, i] = 1
+        one_hot = ml_utils.mask_to_one_hot(mask, self.colour_mapping)
 
         return one_hot
 
