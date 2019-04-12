@@ -2,12 +2,14 @@ import os
 import json
 from pprint import pprint
 import sys
+import time
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from torchvision import transforms
+from tensorboardX import SummaryWriter
 
 import numpy as np
 from tqdm import tqdm
@@ -15,17 +17,17 @@ from tqdm import tqdm
 from coral_reef.constants import paths
 from coral_reef.constants import strings as STR
 
-from coral_reef.ml.data_set import DictArrayDataSet, RandomCrop, Resize, custom_collate, ToTensor, Flip
-from coral_reef.ml.utils import load_state_dict, Saver
+from coral_reef.visualisation import visualisation
 
-sys.path.extend([paths.DEEPLAB_FOLDER_PATH])
+from coral_reef.ml.data_set import DictArrayDataSet, RandomCrop, Resize, custom_collate, ToTensor, Flip
+from coral_reef.ml.utils import load_state_dict, Saver, calculate_class_weights
+
+sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PATH, "utils")])
 
 from modeling.deeplab import DeepLab
-from utils.loss import SegmentationLosses
-from utils.metrics import Evaluator
-from utils.lr_scheduler import LR_Scheduler
-from utils.saver import Saver
-from utils.summaries import TensorboardSummary
+from loss import SegmentationLosses
+from metrics import Evaluator
+from lr_scheduler import LR_Scheduler
 
 
 class Trainer:
@@ -41,8 +43,11 @@ class Trainer:
 
         # specify model save dir
         self.model_name = instructions[STR.MODEL_NAME]
-        experiment_folder_path = os.path.join(paths.MODELS_FOLDER_PATH, self.model_name)
-        os.makedirs(experiment_folder_path, exist_ok=False)
+        now = time.localtime()
+        start_time = "{}-{}-{}T{}:{}:{}".format(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min,
+                                                now.tm_sec)
+        experiment_folder_path = os.path.join(paths.MODELS_FOLDER_PATH, self.model_name + "_" + start_time)
+        os.makedirs(experiment_folder_path)
 
         # define saver and save instructions
         self.saver = Saver(folder_path=experiment_folder_path,
@@ -50,15 +55,14 @@ class Trainer:
         self.saver.save_instructions()
 
         # define Tensorboard Summary
-        self.summary = TensorboardSummary(experiment_folder_path)
-        self.writer = self.summary.create_summary()
+        self.writer = SummaryWriter(log_dir=experiment_folder_path)
 
         nn_input_size = instructions[STR.NN_INPUT_SIZE]
         state_dict_file_path = instructions.get(STR.STATE_DICT_FILE_PATH, None)
 
         # load colour mapping
         with open(os.path.join(instructions[STR.COLOUR_MAPPING_FILE_PATH]), "r") as fp:
-            colour_mapping = json.load(fp)
+            self.colour_mapping = json.load(fp)
 
         # define transformers for training and validation
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
@@ -71,7 +75,7 @@ class Trainer:
         # set up data loaders
         dataset_train = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_train,
-                                         colour_mapping=colour_mapping,
+                                         colour_mapping=self.colour_mapping,
                                          transformation=transformations)
 
         self.data_loader_train = DataLoader(dataset=dataset_train,
@@ -81,7 +85,7 @@ class Trainer:
 
         dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_valid,
-                                         colour_mapping=colour_mapping,
+                                         colour_mapping=self.colour_mapping,
                                          transformation=transformations)
 
         self.data_loader_valid = DataLoader(dataset=dataset_valid,
@@ -119,7 +123,13 @@ class Trainer:
                                          weight_decay=5e-4,
                                          nesterov=False)
 
-        self.criterion = SegmentationLosses(weight=None, cuda=self.device != "cpu").build_loss()
+        # calculate class weights
+        if instructions.get(STR.CLASS_STATS_FILE_PATH, None):
+            class_weights = calculate_class_weights(instructions[STR.CLASS_STATS_FILE_PATH], self.colour_mapping)
+            class_weights = torch.from_numpy(class_weights.astype(np.float32))
+        else:
+            class_weights = None
+        self.criterion = SegmentationLosses(weight=class_weights, cuda=self.device.type != "cpu").build_loss()
 
         # Define Evaluator
         self.evaluator = Evaluator(self.num_classes)
@@ -222,5 +232,10 @@ class Trainer:
         self.saver.save_checkpoint(self.model, is_best, epoch)
 
 
-if __name__ == "__main__":
-    pass
+def train(data_train, data_valid, image_base_dir, instructions):
+    trainer = Trainer(data_train, data_valid, image_base_dir, instructions)
+
+    epochs = instructions[STR.EPOCHS]
+    for epoch in range(1, epochs + 1):
+        trainer.train(epoch)
+        trainer.validation(epoch)

@@ -19,7 +19,9 @@ STEP = "step"
 EPOCHS = "epochs"
 BATCH_SIZE = "batch_size"
 IMAGES_PER_BATCH = "images_per_batch"
-CROPS_PER_IMAGE = "crops_per_image"
+CROPS_PER_IMAGE = "crops"
+
+CLASS_STATS_FILE_PATH = "class_stats_file_path"
 
 TRAINING = "training"
 VALIDATION = "validation"

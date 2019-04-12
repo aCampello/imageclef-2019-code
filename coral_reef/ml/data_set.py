@@ -42,9 +42,9 @@ class DictArrayDataSet(Dataset):
         file_path_mask = os.path.join(self.image_base_dir, item[STR.MASK_NAME])
         mask = load_image(file_path_mask)[:, :, 0]
 
-        one_hot = ml_utils.mask_to_one_hot(mask, self.colour_mapping)
+        class_id_mask = ml_utils.colour_mask_to_class_id_mask(mask, self.colour_mapping)
 
-        return one_hot
+        return class_id_mask
 
     def __getitem__(self, index):
         image = self.load_nn_input(index)
@@ -110,20 +110,20 @@ class Flip:
 
             flip_vertical = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
             nn_input[flip_vertical] = nn_input[flip_vertical, ::-1, :, :]
-            nn_target[flip_vertical] = nn_target[flip_vertical, ::-1, :, :]
+            nn_target[flip_vertical] = nn_target[flip_vertical, ::-1, :]
 
             flip_horizontal = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
             nn_input[flip_horizontal] = nn_input[flip_horizontal, :, ::-1, :]
-            nn_target[flip_horizontal] = nn_target[flip_horizontal, :, ::-1, :]
+            nn_target[flip_horizontal] = nn_target[flip_horizontal, :, ::-1]
 
         else:
             if np.random.rand() > 0.5:
                 nn_input = nn_input[::-1, :, :]
-                nn_target = nn_target[::-1, :, :]
+                nn_target = nn_target[::-1, :]
 
             if np.random.rand() > 0.5:
                 nn_input = nn_input[:, :-1, :]
-                nn_target = nn_target[:, :-1, :]
+                nn_target = nn_target[:, :-1]
 
         sample[STR.NN_INPUT] = nn_input
         sample[STR.NN_TARGET] = nn_target
@@ -147,13 +147,13 @@ class Resize:
             created_list = True
 
         out_image = np.zeros((len(nn_input), self.size, self.size, nn_input[0].shape[2])).astype(nn_input[0].dtype)
-        out_mask = np.zeros((len(nn_input), self.size, self.size, nn_target[0].shape[2])).astype(nn_target[0].dtype)
+        out_mask = np.zeros((len(nn_input), self.size, self.size)).astype(nn_target[0].dtype)
 
         for i, (image, mask) in enumerate(zip(nn_input, nn_target)):
             factor = self.size / image.shape[0]
 
             scaled_image = zoom(image, [factor, factor, 1], order=1)
-            scaled_mask = zoom(mask, [factor, factor, 1], order=0)
+            scaled_mask = zoom(mask, [factor, factor], order=0)
 
             out_image[i, :scaled_image.shape[0], :scaled_image.shape[1]] = scaled_image
             out_mask[i, :scaled_mask.shape[0], :scaled_mask.shape[1]] = scaled_mask
@@ -185,10 +185,10 @@ class ToTensor:
         nn_input = sample[STR.NN_INPUT]
         nn_target = sample[STR.NN_TARGET]
 
-        ordering = [2, 0, 1] if nn_input.ndim == 3 else [0, 3, 1, 2]
+        ordering_input = [2, 0, 1] if nn_input.ndim == 3 else [0, 3, 1, 2]
 
-        sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering))
-        sample[STR.NN_TARGET] = torch.from_numpy(nn_target.transpose(*ordering))
+        sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering_input))
+        sample[STR.NN_TARGET] = torch.from_numpy(nn_target)
 
         return sample
 
