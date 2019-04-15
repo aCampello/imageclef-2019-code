@@ -33,7 +33,7 @@ class DictArrayDataSet(Dataset):
     def load_nn_input(self, index):
         item = self.image_data[index]
         file_path_image = os.path.join(self.image_base_dir, item[STR.IMAGE_NAME])
-        image = load_image(file_path_image).astype(np.float32) / 255.0
+        image = load_image(file_path_image)
 
         return image
 
@@ -56,6 +56,16 @@ class DictArrayDataSet(Dataset):
         if self.transformation:
             sample = self.transformation(sample)
 
+        return sample
+
+
+class Normalize:
+
+    def __init__(self):
+        pass
+
+    def __call__(self, sample):
+        sample[STR.NN_INPUT] = sample[STR.NN_INPUT].astype(np.float32) / 255.0
         return sample
 
 

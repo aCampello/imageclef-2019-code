@@ -19,7 +19,7 @@ from coral_reef.constants import strings as STR
 
 from coral_reef.visualisation import visualisation
 
-from coral_reef.ml.data_set import DictArrayDataSet, RandomCrop, Resize, custom_collate, ToTensor, Flip
+from coral_reef.ml.data_set import DictArrayDataSet, RandomCrop, Resize, custom_collate, ToTensor, Flip, Normalize
 from coral_reef.ml.utils import load_state_dict, Saver, calculate_class_weights
 
 sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PATH, "utils")])
@@ -67,7 +67,14 @@ class Trainer:
         # define transformers for training and validation
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
         random_crop = RandomCrop(min_size=400, max_size=1000, crop_count=crops_per_image)
-        transformations = transforms.Compose([random_crop, Resize(nn_input_size), Flip(), ToTensor()])
+
+        transformations = transforms.Compose([
+            Normalize(),
+            random_crop,
+            Resize(nn_input_size),
+            Flip(),
+            ToTensor()
+        ])
 
         # define batch size
         self.batch_size = crops_per_image * instructions.get(STR.IMAGES_PER_BATCH)
