@@ -35,7 +35,7 @@ def plot_data(image, gt_mask, colour_mapping, prediction_mask=None):
     for i, overlay in enumerate(overlays):
         grid[i].imshow(image)
         grid[i].set_axis_off()
-        ax = grid[i].imshow(overlay, cmap="tab20", alpha=0.9)
+        ax = grid[i].imshow(overlay, cmap="tab20", alpha=0.9, vmin=0, vmax=255)
 
         colours = list(sorted(set(list(colours) + np.unique(overlays).tolist())))
         # plt.axis("off")
