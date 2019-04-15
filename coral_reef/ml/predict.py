@@ -19,7 +19,7 @@ sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PA
 from modeling.deeplab import DeepLab
 
 
-def predict_by_cutting(image, model, device, nn_input_size, verbose=0):
+def predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_sizes, verbose=0):
     """
     Predicts the given image with the given model. Image is cut into several overlapping pieces which will be predicted
     individually. Will be recombined after prediction.
@@ -27,6 +27,8 @@ def predict_by_cutting(image, model, device, nn_input_size, verbose=0):
     :param model: model used for prediction
     :param device: PyTorch device (cpu or gpu)
     :param nn_input_size: input size for the model
+    :param window_sizes:
+    :param step_sizes:
     :param verbose: 0 if print statements should not be shown, 1 if they should
     :return: array containing the class ids
     """
@@ -35,7 +37,11 @@ def predict_by_cutting(image, model, device, nn_input_size, verbose=0):
     printer = Printer(verbose=verbose)
 
     # cut the input into several, overlapping images
-    cuts, start_points = _cut_windows(image, window_size=1500, step_size=750)
+    cuts, start_points = [], []
+    for w_s, s_s in zip(window_sizes, step_sizes):
+        cts, pts = _cut_windows(image, window_size=w_s, step_size=s_s)
+        cuts += cts
+        start_points += pts
 
     printer("Cut image into {} pieces".format(len(cuts)))
 

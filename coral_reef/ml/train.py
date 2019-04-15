@@ -43,11 +43,12 @@ class Trainer:
 
         # specify model save dir
         self.model_name = instructions[STR.MODEL_NAME]
-        now = time.localtime()
-        start_time = "{}-{}-{}T{}:{}:{}".format(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min,
-                                                now.tm_sec)
-        experiment_folder_path = os.path.join(paths.MODELS_FOLDER_PATH, self.model_name + "_" + start_time)
-        os.makedirs(experiment_folder_path)
+        # now = time.localtime()
+        # start_time = "{}-{}-{}T{}:{}:{}".format(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min,
+        #                                         now.tm_sec)
+        experiment_folder_path = os.path.join(paths.MODELS_FOLDER_PATH, self.model_name)
+
+        os.makedirs(experiment_folder_path, exist_ok=False)
 
         # define saver and save instructions
         self.saver = Saver(folder_path=experiment_folder_path,
