@@ -148,32 +148,37 @@ class Resize:
 
     def __call__(self, sample):
         nn_input = sample[STR.NN_INPUT]
-        nn_target = sample[STR.NN_TARGET]
+        nn_target = sample.get(STR.NN_TARGET, None)
 
         created_list = False
         if not isinstance(nn_input, list):
             nn_input = [nn_input]
-            nn_target = [nn_target]
+            nn_target = [nn_target] if nn_target is not None else None
             created_list = True
 
         out_image = np.zeros((len(nn_input), self.size, self.size, nn_input[0].shape[2])).astype(nn_input[0].dtype)
-        out_mask = np.zeros((len(nn_input), self.size, self.size)).astype(nn_target[0].dtype)
 
-        for i, (image, mask) in enumerate(zip(nn_input, nn_target)):
+        if nn_target is not None:
+            out_mask = np.zeros((len(nn_input), self.size, self.size)).astype(nn_target[0].dtype)
+
+        for i in range(len(nn_input)):
+            image = nn_input[i]
             factor = self.size / image.shape[0]
 
             scaled_image = zoom(image, [factor, factor, 1], order=1)
-            scaled_mask = zoom(mask, [factor, factor], order=0)
-
             out_image[i, :scaled_image.shape[0], :scaled_image.shape[1]] = scaled_image
-            out_mask[i, :scaled_mask.shape[0], :scaled_mask.shape[1]] = scaled_mask
+
+            if nn_target is not None:
+                scaled_mask = zoom(nn_target[i], [factor, factor], order=0)
+                out_mask[i, :scaled_mask.shape[0], :scaled_mask.shape[1]] = scaled_mask
 
         if created_list:
             out_image = out_image[0]
-            out_mask = out_mask[0]
+            out_mask = out_mask[0] if nn_target is not None else None
 
         sample[STR.NN_INPUT] = out_image
-        sample[STR.NN_TARGET] = out_mask
+        if nn_target is not None:
+            sample[STR.NN_TARGET] = out_mask
 
         return sample
 
@@ -193,12 +198,19 @@ class ToTensor:
         :return:
         """
         nn_input = sample[STR.NN_INPUT]
-        nn_target = sample[STR.NN_TARGET]
 
-        ordering_input = [2, 0, 1] if nn_input.ndim == 3 else [0, 3, 1, 2]
+        nn_target = sample.get(STR.NN_TARGET, None)
+
+        if nn_input.ndim == 3:
+            nn_input = np.expand_dims(nn_input, 0)
+            nn_target = np.expand_dims(nn_target, 0) if nn_target is not None else None
+
+        ordering_input = [0, 3, 1, 2]
 
         sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering_input))
-        sample[STR.NN_TARGET] = torch.from_numpy(nn_target)
+
+        if nn_target is not None:
+            sample[STR.NN_TARGET] = torch.from_numpy(nn_target)
 
         return sample
 

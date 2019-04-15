@@ -104,7 +104,7 @@ class Saver(object):
 
     def save_checkpoint(self, model, is_best, epoch):
         file_path = os.path.join(self.folder_path, "checkpoint_epoch_{}.pt".format(epoch))
-        torch.save(model, file_path)
+        torch.save(model.state_dict(), file_path)
         if is_best:
             shutil.copyfile(file_path, os.path.join(self.folder_path, 'model_best.pth'))
 

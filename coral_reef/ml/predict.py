@@ -6,9 +6,12 @@ import numpy as np
 import torch
 from torchvision import transforms
 from tqdm import tqdm
+from scipy.ndimage import zoom
 
 from coral_reef.ml.data_set import Normalize, Resize, ToTensor
 from coral_reef.constants import paths
+from coral_reef.constants import strings as STR
+
 from coral_reef.ml.utils import load_state_dict
 from coral_reef.utils.print_utils import Printer
 
@@ -24,6 +27,7 @@ def predict_by_cutting(image, model, device, nn_input_size, verbose=0):
     :param model: model used for prediction
     :param device: PyTorch device (cpu or gpu)
     :param nn_input_size: input size for the model
+    :param verbose: 0 if print statements should not be shown, 1 if they should
     :return: array containing the class ids
     """
 
@@ -31,7 +35,7 @@ def predict_by_cutting(image, model, device, nn_input_size, verbose=0):
     printer = Printer(verbose=verbose)
 
     # cut the input into several, overlapping images
-    cuts, start_points = _cut_windows(image, window_size=700, step_size=350)
+    cuts, start_points = _cut_windows(image, window_size=1500, step_size=750)
 
     printer("Cut image into {} pieces".format(len(cuts)))
 
@@ -69,14 +73,18 @@ def predict_image(image, model, device, nn_input_size):
     :return:
     """
     # create transformations needed to preprocess image to go into the neural network
+
     transformations = transforms.Compose([
         Normalize(),
         Resize(nn_input_size),
         ToTensor()
     ])
 
+    sample = {STR.NN_INPUT: image}
+
     # apply transformations
-    nn_input = transformations(image)
+    sample = transformations(sample)
+    nn_input = sample[STR.NN_INPUT]
 
     nn_input = nn_input.to(device)
 
@@ -84,6 +92,12 @@ def predict_image(image, model, device, nn_input_size):
     output = model(nn_input)
     output = output.detach().cpu().numpy()
     output = output[0]  # remove the first dimension which corresponds to the index in the batch
+    output = output.transpose(1, 2, 0)
+
+    # scale output up to original size
+    factor = image.shape[0] / output.shape[0]
+    output = zoom(output, [factor, factor, 1], order=0)
+
     return output
 
 
@@ -124,5 +138,3 @@ def _cut_windows(image, window_size, step_size=None):
             # print("x: {}/ y:{} to x: {}/ y:{}".format(start_x, start_y, end_x, end_y))
 
     return cuts, start_points
-
-
