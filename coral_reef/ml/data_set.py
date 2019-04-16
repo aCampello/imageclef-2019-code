@@ -109,8 +109,9 @@ class Flip:
     Flips numpy arrays randomly horizontally and vertically
     """
 
-    def __int__(self):
-        pass
+    def __init__(self, p_vertical=0.5, p_horizontal=0.5):
+        self.p_horizontal = p_horizontal
+        self.p_vertical = p_vertical
 
     def __call__(self, sample):
         nn_input = sample[STR.NN_INPUT]
@@ -118,20 +119,20 @@ class Flip:
 
         if nn_input.ndim == 4:
 
-            flip_vertical = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
+            flip_vertical = np.where((np.random.rand(nn_input.shape[0]) < self.p_vertical) * 1)[0]
             nn_input[flip_vertical] = nn_input[flip_vertical, ::-1, :, :]
             nn_target[flip_vertical] = nn_target[flip_vertical, ::-1, :]
 
-            flip_horizontal = np.where((np.random.rand(nn_input.shape[0]) > 0.5) * 1)[0]
+            flip_horizontal = np.where((np.random.rand(nn_input.shape[0]) < self.p_horizontal) * 1)[0]
             nn_input[flip_horizontal] = nn_input[flip_horizontal, :, ::-1, :]
             nn_target[flip_horizontal] = nn_target[flip_horizontal, :, ::-1]
 
         else:
-            if np.random.rand() > 0.5:
+            if np.random.rand() < self.p_vertical:
                 nn_input = nn_input[::-1, :, :]
                 nn_target = nn_target[::-1, :]
 
-            if np.random.rand() > 0.5:
+            if np.random.rand() < self.p_horizontal:
                 nn_input = nn_input[:, :-1, :]
                 nn_target = nn_target[:, :-1]
 

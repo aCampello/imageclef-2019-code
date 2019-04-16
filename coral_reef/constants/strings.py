@@ -20,6 +20,8 @@ EPOCHS = "epochs"
 BATCH_SIZE = "batch_size"
 IMAGES_PER_BATCH = "images_per_batch"
 CROPS_PER_IMAGE = "crops"
+CROP_SIZE_MIN = "crop_size_min"
+CROP_SIZE_MAX = "crop_size_max"
 
 CLASS_STATS_FILE_PATH = "class_stats_file_path"
 

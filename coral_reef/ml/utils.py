@@ -78,7 +78,7 @@ def calculate_class_weights(class_stats_file_path, colour_mapping):
 
     shares = [stats[c]["share"] for c in sorted(colour_mapping.keys())]
     shares = np.array(shares)
-    class_weights = 1 / shares
+    class_weights = 1 / np.log(1.01 + shares)
     return class_weights
 
 

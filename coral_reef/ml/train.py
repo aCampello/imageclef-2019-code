@@ -67,13 +67,15 @@ class Trainer:
 
         # define transformers for training and validation
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
-        random_crop = RandomCrop(min_size=400, max_size=1000, crop_count=crops_per_image)
 
         transformations = transforms.Compose([
             Normalize(),
-            random_crop,
+            RandomCrop(
+                min_size=instructions.get(STR.CROP_SIZE_MIN, 400),
+                max_size=instructions.get(STR.CROP_SIZE_MAX, 1000),
+                crop_count=crops_per_image),
             Resize(nn_input_size),
-            Flip(),
+            Flip(p_vertical=0.2, p_horizontal=0.5),
             ToTensor()
         ])
 
