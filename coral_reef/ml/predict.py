@@ -95,6 +95,7 @@ def predict_image(image, model, device, nn_input_size):
     nn_input = nn_input.to(device)
 
     # predict input
+    model.eval()
     output = model(nn_input)
     output = output.detach().cpu().numpy()
     output = output[0]  # remove the first dimension which corresponds to the index in the batch
