@@ -194,7 +194,7 @@ class Trainer:
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print("[Epoch: {}, num crops: {}]".format(epoch, num_batches_train * self.batch_size))
 
-        print('Loss: %.3f' % train_loss)
+        print("Loss: {:.2f}".format(train_loss))
 
     def validation(self, epoch):
 
@@ -234,8 +234,8 @@ class Trainer:
         self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
         print('Validation:')
         print("[Epoch: {}, num crops: {}]".format(epoch, num_batches_val * self.batch_size))
-        print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
-        print('Loss: %.3f' % test_loss)
+        print("Acc:{:.2f}, Acc_class:{:.2f}, mIoU:{:.2f}, fwIoU: {:.2f}".format(Acc, Acc_class, mIoU, FWIoU))
+        print("Loss: {:.2f}".format(test_loss))
 
         new_pred = mIoU
         is_best = new_pred > self.best_prediction
