@@ -7,42 +7,42 @@ link to the challenge: https://www.crowdai.org/challenges/imageclef-2019-coral-p
 
 installation:
 
-#clone this repo 
-	```
+# clone this repo 
+	~~~~
 	git clone git@tungsten.filament.uk.com:RD/coral_reef.git
 	cd coral_reef
-	```
+	~~~~
 
-#clone git repository for deeplabv3+:
-	```	
+# clone git repository for deeplabv3+:
+	~~~~	
 	mkdir src
 	cd src
 	git clone https://github.com/jfzhang95/pytorch-deeplab-xception.git
 	cd ..
-	```
+	~~~~
 
 # create python environment (e.g. with conda) and activate it
 	
-	```
+	~~~~
 	conda create --name coral_reef python==3.6.7
 	source activate coral_reef
-	```
-
+	~~~~
+	
 # install pytorch
 	---- Cuda available, Cuda version 9.0: ----
-	```	
+	~~~~	
 	conda install pytorch torchvision cudatoolkit=9.0 -c pytorch
-	```
+	~~~~
     
     OR
     
 	---- Cuda not available: ---
-	```	
+	~~~~	
 	conda install pytorch-cpu torchvision-cpu -c pytorch
-	```
+	~~~~
 
 # install requirements
-	```
+	~~~~
 	pip install --upgrade pip
 	pip install -r requirements.txt
-	```
+	~~~~
