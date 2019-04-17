@@ -9,6 +9,8 @@ NN_TARGET = "nn_target"
 
 MODEL_NAME = "model_name"
 
+BACKBONE = "backbone"
+
 MODEL = "model"
 
 NN_INPUT_SIZE = "nn_input_shape"
@@ -23,6 +25,8 @@ CROPS_PER_IMAGE = "crops"
 CROP_SIZE_MIN = "crop_size_min"
 CROP_SIZE_MAX = "crop_size_max"
 
+USE_LR_SCHEDULER = "use_lr_scheduler"
+
 CLASS_STATS_FILE_PATH = "class_stats_file_path"
 
 TRAINING = "training"
@@ -32,3 +36,4 @@ LEARNING_RATE = "learning_rate"
 
 COLOUR_MAPPING_FILE_PATH = "colour_mapping_file_path"
 
+LOSS_WEIGHT_MODIFIER = "loss_weight_modifier"

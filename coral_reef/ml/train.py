@@ -108,7 +108,7 @@ class Trainer:
         # define model
         print("Building model")
         self.model = DeepLab(num_classes=self.num_classes,
-                             backbone="resnet")
+                             backbone=instructions.get(STR.BACKBONE, "resnet"))
 
         # load weights
         if state_dict_file_path is not None:
@@ -124,8 +124,9 @@ class Trainer:
 
         self.model.to(self.device)
 
-        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': instructions.get(STR.LEARNING_RATE, 1e-5)},
-                        {'params': self.model.get_10x_lr_params(), 'lr': instructions.get(STR.LEARNING_RATE, 1e-5)}]
+        learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
+        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
+                        {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
 
         # Define Optimizer
         self.optimizer = torch.optim.SGD(train_params,
@@ -135,7 +136,11 @@ class Trainer:
 
         # calculate class weights
         if instructions.get(STR.CLASS_STATS_FILE_PATH, None):
-            class_weights = calculate_class_weights(instructions[STR.CLASS_STATS_FILE_PATH], self.colour_mapping)
+
+            class_weights = calculate_class_weights(instructions[STR.CLASS_STATS_FILE_PATH],
+                                                    self.colour_mapping,
+                                                    modifier=instructions.get(STR.LOSS_WEIGHT_MODIFIER, 1.01))
+
             class_weights = torch.from_numpy(class_weights.astype(np.float32))
         else:
             class_weights = None
@@ -145,8 +150,12 @@ class Trainer:
         self.evaluator = Evaluator(self.num_classes)
 
         # Define lr scheduler
-        # scheduler = LR_Scheduler(args.lr_scheduler, learning_rate,
-        #                               args.epochs, len(self.train_loader))
+        self.scheduler = None
+        if instructions.get(STR.USE_LR_SCHEDULER, True):
+            self.scheduler = LR_Scheduler(mode="cos",
+                                          base_lr=learning_rate,
+                                          num_epochs=instructions[STR.EPOCHS],
+                                          iters_per_epoch=len(self.data_loader_train))
 
         # print information before training start
         print("-" * 60)
@@ -170,6 +179,9 @@ class Trainer:
             # set input and target
             nn_input = sample[STR.NN_INPUT].to(self.device)
             nn_target = sample[STR.NN_TARGET].to(self.device, dtype=torch.float)
+
+            if self.scheduler:
+                self.scheduler(self.optimizer, i, epoch, self.best_prediction)
 
             # run model
             output = self.model(nn_input)

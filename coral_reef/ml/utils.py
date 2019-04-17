@@ -72,13 +72,13 @@ def one_hot_to_mask(one_hot, colour_mapping):
     return mask
 
 
-def calculate_class_weights(class_stats_file_path, colour_mapping):
+def calculate_class_weights(class_stats_file_path, colour_mapping, modifier=1.01):
     with open(class_stats_file_path, "r") as fp:
         stats = json.load(fp)
 
     shares = [stats[c]["share"] for c in sorted(colour_mapping.keys())]
     shares = np.array(shares)
-    class_weights = 1 / np.log(1.01 + shares)
+    class_weights = 1 / np.log(modifier + shares)
     return class_weights
 
 
