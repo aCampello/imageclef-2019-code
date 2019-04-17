@@ -215,7 +215,7 @@ class Trainer:
         test_loss = 0.0
 
         pbar = tqdm(self.data_loader_valid, desc='\r')
-        num_batches_val = len(self.data_loader_train)
+        num_batches_val = len(self.data_loader_valid)
 
         for i, sample in enumerate(pbar):
             # set input and target
