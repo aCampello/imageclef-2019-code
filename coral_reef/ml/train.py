@@ -251,6 +251,8 @@ class Trainer:
 
         new_pred = mIoU
         is_best = new_pred > self.best_prediction
+        if is_best:
+            self.best_prediction = new_pred
         self.saver.save_checkpoint(self.model, is_best, epoch)
 
 
