@@ -7,6 +7,7 @@ import torch
 from torchvision import transforms
 from tqdm import tqdm
 from scipy.ndimage import zoom
+import cv2
 
 from coral_reef.ml.data_set import Normalize, Resize, ToTensor
 from coral_reef.constants import paths
@@ -19,7 +20,7 @@ sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PA
 from modeling.deeplab import DeepLab
 
 
-def predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_sizes, verbose=0):
+def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_sizes, verbose=0):
     """
     Predicts the given image with the given model. Image is cut into several overlapping pieces which will be predicted
     individually. Will be recombined after prediction.
@@ -52,7 +53,7 @@ def predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_s
     pbar = tqdm(zip(cuts, start_points))
 
     for cut_image, start_point in pbar:
-        output = predict_image(cut_image, model, device, nn_input_size)
+        output = _predict_image(cut_image, model, device, nn_input_size)
 
         # we didn't know the number of classes before prediction, so create output array now
         if combined_output is None:
@@ -69,7 +70,7 @@ def predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_s
     return class_id_mask
 
 
-def predict_image(image, model, device, nn_input_size):
+def _predict_image(image, model, device, nn_input_size):
     """
 
     :param image:
@@ -145,3 +146,50 @@ def _cut_windows(image, window_size, step_size=None):
             # print("x: {}/ y:{} to x: {}/ y:{}".format(start_x, start_y, end_x, end_y))
 
     return cuts, start_points
+
+
+def predict(image_file_paths, instructions):
+    """
+    Segment images
+    :param image_file_paths: paths to images that will be predicted
+    :param instructions: instructions used for prediction
+    :return: list of prediction masks
+    """
+
+    # load colour mapping
+    with open(instructions[STR.COLOUR_MAPPING_FILE_PATH], "r") as fp:
+        colour_mapping = json.load(fp)
+
+    model = DeepLab(num_classes=len(colour_mapping.keys()),
+                    backbone=instructions.get(STR.BACKBONE, "resnet"))
+    # load weights
+    load_state_dict(model, instructions[STR.STATE_DICT_FILE_PATH])
+
+    # choose gpu or cpu
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model.to(device)
+
+    prediction_results = []
+    for i, image_file_path in enumerate(image_file_paths):
+        print("predicting image {} of {}".format(i + 1, len(image_file_paths)))
+
+        image = cv2.imread(image_file_path)[:, :, ::-1]
+
+        window_sizes = [500, 1000, 1500]
+        step_sizes = [500, 750, 1000]
+
+        # window_sizes = [1000]
+        # step_sizes = [1000]
+
+        class_id_mask = _predict_by_cutting(image=image,
+                                            model=model,
+                                            device=device,
+                                            nn_input_size=instructions[STR.NN_INPUT_SIZE],
+                                            window_sizes=window_sizes,
+                                            step_sizes=step_sizes,
+                                            verbose=1)
+
+        prediction_results.append(class_id_mask)
+
+    return prediction_results
