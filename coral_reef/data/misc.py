@@ -10,6 +10,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from coral_reef.constants import paths
 
+
 def shrink_images(input_folder_path, output_folder_path, scale_factor=0.25, file_extension="png"):
     """
     Load images from input_folder_path, scale them down and save them in the output folder.
@@ -138,43 +139,52 @@ def calculate_class_stats(mask_files, colour_mapping):
     shares = calc_class_shares(mask_files, colour_mapping)
 
     # create process bar
-    pbar = tqdm(total=len(classes), ncols=50)
+    pbar = tqdm(classes, ncols=50)
 
     print("Retrieving filenames ")
-    for c in classes:
+    for c in pbar:
         stats[c]["share"] = shares[c]
         stats[c]["max_file"] = get_mask_names_for_color(mask_files, colour_mapping[c], fetch_type="max")[0]
         stats[c]["files"] = get_mask_names_for_color(mask_files, colour_mapping[c], fetch_type="all")
-        pbar.update(1)
-
-    pbar.close()
 
     return stats
 
 
-if __name__ == "__main__":
-    # in_folder_path = "/home/aljo/filament/coral_reef/data/masks"
-    # out_folder_path = "/home/aljo/filament/coral_reef/data/masks_super_small"
-    # shrink_images(in_folder_path, out_folder_path, scale_factor=0.1)
-
-    # mask_folder_path = "/home/aljo/filament/coral_reef/data/masks_small"
+def __create_stats_files_train_valid():
     mappings_file_path = "/home/aljo/filament/coral_reef/data/colour_mapping.json"
     with open(mappings_file_path, "r") as fp:
         colour_mapping = json.load(fp)
     #
 
     for d_type in ["train", "valid"]:
-
         with open(os.path.join(paths.DATA_FOLDER_PATH, "data_" + d_type + ".json"), "r") as fp:
             data = json.load(fp)
 
-        mask_files = [os.path.join(paths.DATA_FOLDER_PATH, "masks_small", os.path.split(d["mask_name"])[1]) for d in data]
-
+        mask_files = [os.path.join(paths.DATA_FOLDER_PATH, "masks_small", os.path.split(d["mask_name"])[1]) for d in
+                      data]
 
         stats = calculate_class_stats(mask_files, colour_mapping)
 
         with open(os.path.join(paths.DATA_FOLDER_PATH, "class_stats_" + d_type + ".json"), "w") as fp:
             json.dump(stats, fp, indent=4)
 
-    # a = 1
-    # pprint(calc_class_shares(mask_folder_path, colour_mapping))
+
+def __create_stats_files_train_hard():
+    mappings_file_path = "/home/aljo/filament/coral_reef/data/colour_mapping.json"
+    with open(mappings_file_path, "r") as fp:
+        colour_mapping = json.load(fp)
+
+    with open(os.path.join(paths.DATA_FOLDER_PATH, "data_train_hard.json"), "r") as fp:
+        data = json.load(fp)
+
+    mask_files = [os.path.join(paths.DATA_FOLDER_PATH, d["mask_name"]) for d in
+                  data]
+
+    stats = calculate_class_stats(mask_files, colour_mapping)
+
+    with open(os.path.join(paths.DATA_FOLDER_PATH, "class_stats_train_hard.json"), "w") as fp:
+        json.dump(stats, fp, indent=4)
+
+
+if __name__ == "__main__":
+    __create_stats_files_train_hard()

@@ -68,8 +68,10 @@ class Trainer:
         # define transformers for training
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
 
+        apply_random_cropping = instructions.get(STR.RANDOM_CROPPING, True)
+
         t = [Normalize()]
-        if instructions.get(STR.RANDOM_CROPPING, True):
+        if apply_random_cropping:
             t.append(RandomCrop(
                 min_size=instructions.get(STR.CROP_SIZE_MIN, 400),
                 max_size=instructions.get(STR.CROP_SIZE_MAX, 1000),
@@ -83,19 +85,24 @@ class Trainer:
         # define transformers for validation
         transformations_valid = transforms.Compose([Normalize(), Resize(nn_input_size), ToTensor()])
 
-        # define batch size
-        self.batch_size = crops_per_image * instructions.get(STR.IMAGES_PER_BATCH)
-
         # set up data loaders
         dataset_train = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_train,
                                          colour_mapping=self.colour_mapping,
                                          transformation=transformations_train)
 
-        self.data_loader_train = DataLoader(dataset=dataset_train,
-                                            batch_size=int(self.batch_size / crops_per_image),
-                                            shuffle=True,
-                                            collate_fn=custom_collate)
+        # define batch sizes
+        self.batch_size = instructions[STR.BATCH_SIZE]
+
+        if apply_random_cropping:
+            self.data_loader_train = DataLoader(dataset=dataset_train,
+                                                batch_size=int(self.batch_size / crops_per_image),
+                                                shuffle=True,
+                                                collate_fn=custom_collate)
+        else:
+            self.data_loader_train = DataLoader(dataset=dataset_train,
+                                                batch_size=self.batch_size,
+                                                shuffle=True)
 
         dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_valid,
