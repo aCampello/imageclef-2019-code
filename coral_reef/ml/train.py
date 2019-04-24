@@ -115,7 +115,8 @@ class Trainer:
 
         self.data_loader_valid = DataLoader(dataset=dataset_valid,
                                             batch_size=self.batch_size,
-                                            shuffle=False)
+                                            shuffle=False,
+                                            collate_fn=custom_collate)
 
         self.num_classes = dataset_train.num_classes()
 
