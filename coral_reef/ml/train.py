@@ -65,19 +65,23 @@ class Trainer:
         with open(os.path.join(instructions[STR.COLOUR_MAPPING_FILE_PATH]), "r") as fp:
             self.colour_mapping = json.load(fp)
 
-        # define transformers for training and validation
+        # define transformers for training
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
 
-        transformations = transforms.Compose([
-            Normalize(),
-            RandomCrop(
+        t = [Normalize()]
+        if instructions.get(STR.RANDOM_CROPPING, True):
+            t.append(RandomCrop(
                 min_size=instructions.get(STR.CROP_SIZE_MIN, 400),
                 max_size=instructions.get(STR.CROP_SIZE_MAX, 1000),
-                crop_count=crops_per_image),
-            Resize(nn_input_size),
-            Flip(p_vertical=0.2, p_horizontal=0.5),
-            ToTensor()
-        ])
+                crop_count=crops_per_image))
+        t += [Resize(nn_input_size),
+              Flip(p_vertical=0.2, p_horizontal=0.5),
+              ToTensor()]
+
+        transformations_train = transforms.Compose(t)
+
+        # define transformers for validation
+        transformations_valid = transforms.Compose([Normalize(), Resize(nn_input_size), ToTensor()])
 
         # define batch size
         self.batch_size = crops_per_image * instructions.get(STR.IMAGES_PER_BATCH)
@@ -86,7 +90,7 @@ class Trainer:
         dataset_train = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_train,
                                          colour_mapping=self.colour_mapping,
-                                         transformation=transformations)
+                                         transformation=transformations_train)
 
         self.data_loader_train = DataLoader(dataset=dataset_train,
                                             batch_size=int(self.batch_size / crops_per_image),
@@ -96,12 +100,11 @@ class Trainer:
         dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_valid,
                                          colour_mapping=self.colour_mapping,
-                                         transformation=transformations)
+                                         transformation=transformations_valid)
 
         self.data_loader_valid = DataLoader(dataset=dataset_valid,
-                                            batch_size=int(self.batch_size / crops_per_image),
-                                            shuffle=False,
-                                            collate_fn=custom_collate)
+                                            batch_size=self.batch_size,
+                                            shuffle=False)
 
         self.num_classes = dataset_train.num_classes()
 

@@ -13,7 +13,7 @@ from coral_reef.ml.data_set import Normalize, Resize, ToTensor
 from coral_reef.constants import paths
 from coral_reef.constants import strings as STR
 
-from coral_reef.ml.utils import load_state_dict
+from coral_reef.ml.utils import load_state_dict, cut_windows
 from coral_reef.utils.print_utils import Printer
 
 sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PATH, "utils")])
@@ -40,7 +40,7 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
     # cut the input into several, overlapping images
     cuts, start_points = [], []
     for w_s, s_s in zip(window_sizes, step_sizes):
-        cts, pts = _cut_windows(image, window_size=w_s, step_size=s_s)
+        cts, pts = cut_windows(image, window_size=w_s, step_size=s_s)
         cuts += cts
         start_points += pts
 
@@ -109,51 +109,14 @@ def _predict_image(image, model, device, nn_input_size):
     return output
 
 
-def _cut_windows(image, window_size, step_size=None):
-    """
-    Cut an image into several, equally sized windows. step size determines the overlap of the windows.
-    :param image: image to be cut
-    :param window_size: size of the square windows
-    :param step_size: step size between windows, determines overlap. Depending on the image size, window size and
-     step size it may not be possible to ensure the given step size since a constant window size is preferred
-    :return: list of cut images and list of original, upper left corner points (x, y)
-    """
-    step_size = int(window_size / 2) if step_size is None else step_size
-
-    h, w = image.shape[:2]
-    cuts = []
-    start_points = []
-
-    for x in range(0, w - step_size, step_size):
-        end_x = np.min([x + window_size, w])
-        start_x = end_x - window_size
-
-        # stop if the current rectangle has been done before
-        if len(start_points) > 0 and start_x == start_points[-1][0]:
-            break
-
-        for y in range(0, h - step_size, step_size):
-            end_y = np.min([y + window_size, h])
-            start_y = end_y - window_size
-
-            # stop if the current rectangle has been done before
-            if len(start_points) > 0 and start_y == start_points[-1][1]:
-                break
-
-            cuts.append(image[start_y:end_y, start_x:end_x])
-            start_points.append([start_x, start_y])
-
-            # print("x: {}/ y:{} to x: {}/ y:{}".format(start_x, start_y, end_x, end_y))
-
-    return cuts, start_points
-
-
-def predict(image_file_paths, instructions):
+def predict(image_file_paths, instructions, res_fcn=None):
     """
     Segment images
     :param image_file_paths: paths to images that will be predicted
     :param instructions: instructions used for prediction
-    :return: list of prediction masks
+    :param res_fcn: custom method that will be called with the result prediction mask and the image name. If None, data
+    will be returned in a list
+    :return: list of prediction masks if res_fcn is None, else Nothing
     """
 
     # load colour mapping
@@ -177,10 +140,10 @@ def predict(image_file_paths, instructions):
         image = cv2.imread(image_file_path)[:, :, ::-1]
 
         window_sizes = [500, 1000, 1500]
-        step_sizes = [500, 750, 1000]
+        step_sizes = [350, 750, 1000]
 
-        # window_sizes = [1000]
-        # step_sizes = [1000]
+        # window_sizes = window_sizes[:1]
+        # step_sizes = step_sizes[:1]
 
         class_id_mask = _predict_by_cutting(image=image,
                                             model=model,
@@ -190,6 +153,12 @@ def predict(image_file_paths, instructions):
                                             step_sizes=step_sizes,
                                             verbose=1)
 
-        prediction_results.append(class_id_mask)
+        # deal with the results. Either apply custom function or append to list
+        if res_fcn is not None:
+            image_file_name = os.path.split(image_file_path)[1]
+            res_fcn(class_id_mask, image_file_name)
+        else:
+            prediction_results.append(class_id_mask)
 
-    return prediction_results
+    if res_fcn is None:
+        return prediction_results

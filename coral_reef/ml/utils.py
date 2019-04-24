@@ -96,6 +96,92 @@ def load_state_dict(model, filepath):
     model.load_state_dict(model_dict)
 
 
+def cut_windows(image, window_size, step_size=None):
+    """
+    Cut an image into several, equally sized windows. step size determines the overlap of the windows.
+    :param image: image to be cut
+    :param window_size: size of the square windows
+    :param step_size: step size between windows, determines overlap. Depending on the image size, window size and
+     step size it may not be possible to ensure the given step size since a constant window size is preferred
+    :return: list of cut images and list of original, upper left corner points (x, y)
+    """
+    step_size = int(window_size / 2) if step_size is None else step_size
+
+    h, w = image.shape[:2]
+    cuts = []
+    start_points = []
+
+    for x in range(0, w - step_size, step_size):
+        end_x = np.min([x + window_size, w])
+        start_x = end_x - window_size
+
+        # stop if the current rectangle has been done before
+        if len(start_points) > 0 and start_x == start_points[-1][0]:
+            break
+
+        for y in range(0, h - step_size, step_size):
+            end_y = np.min([y + window_size, h])
+            start_y = end_y - window_size
+
+            # stop if the current rectangle has been done before
+            if len(start_points) > 0 and start_y == start_points[-1][1]:
+                break
+
+            cuts.append(image[start_y:end_y, start_x:end_x])
+            start_points.append([start_x, start_y])
+
+            # print("x: {}/ y:{} to x: {}/ y:{}".format(start_x, start_y, end_x, end_y))
+
+    return cuts, start_points
+
+
+def calc_rect_size(rect):
+    """
+    Calculated the area of a rectangle
+    :param rect: rectangle dict
+    :return: area
+    """
+    return (rect[3] - rect[1]) * (rect[2] - rect[0])
+
+
+def calc_intersection(rect1, rect2):
+    """
+    Calculate the intersection area of two rectangles
+    :param rect1: rectangle list
+    :param rect2: rectangle list
+    :return: union area
+    """
+    x1 = max([rect1[0], rect2[0]])
+    y1 = max([rect1[1], rect2[1]])
+    x2 = min([rect1[2], rect2[2]])
+    y2 = min([rect1[3], rect2[3]])
+
+    if (x2 < x1) or (y2 < y1):
+        return 0
+
+    return (x2 - x1) * (y2 - y1)
+
+
+def calc_union(rect1, rect2):
+    """
+    Calculate the union area of two rectangles
+    :param rect1: rectangle dict
+    :param rect2: rectangle dict
+    :return: union area
+    """
+    return calc_rect_size(rect1) + calc_rect_size(rect2) - calc_intersection(rect1, rect2)
+
+
+def calc_IOU(rect1, rect2):
+    """
+    Calculate intersection over union of two rectangles. This is a measure of how similar rectangles
+    :param rect1: rectangle dict
+    :param rect2: rectangle dict
+    :return: IOU area
+    """
+    return calc_intersection(rect1, rect2) / calc_union(rect1, rect2)
+
+
 class Saver(object):
 
     def __init__(self, folder_path, instructions):
