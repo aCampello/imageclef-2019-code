@@ -48,7 +48,9 @@ class Trainer:
         #                                         now.tm_sec)
         experiment_folder_path = os.path.join(paths.MODELS_FOLDER_PATH, self.model_name)
 
-        os.makedirs(experiment_folder_path, exist_ok=False)
+        if os.path.exists(experiment_folder_path):
+            Warning("Experiment folder exists already. Files might be overwritten")
+        os.makedirs(experiment_folder_path, exist_ok=True)
 
         # define saver and save instructions
         self.saver = Saver(folder_path=experiment_folder_path,
@@ -68,7 +70,8 @@ class Trainer:
         # define transformers for training
         crops_per_image = instructions.get(STR.CROPS_PER_IMAGE, 10)
 
-        apply_random_cropping = instructions.get(STR.RANDOM_CROPPING, True)
+        apply_random_cropping = (STR.CROPS_PER_IMAGE in instructions.keys()) and \
+                                (STR.IMAGES_PER_BATCH in instructions.keys())
 
         t = [Normalize()]
         if apply_random_cropping:
@@ -96,13 +99,14 @@ class Trainer:
 
         if apply_random_cropping:
             self.data_loader_train = DataLoader(dataset=dataset_train,
-                                                batch_size=int(self.batch_size / crops_per_image),
+                                                batch_size=instructions[STR.IMAGES_PER_BATCH],
                                                 shuffle=True,
                                                 collate_fn=custom_collate)
         else:
             self.data_loader_train = DataLoader(dataset=dataset_train,
                                                 batch_size=self.batch_size,
-                                                shuffle=True)
+                                                shuffle=True,
+                                                collate_fn=custom_collate)
 
         dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
                                          data=data_valid,

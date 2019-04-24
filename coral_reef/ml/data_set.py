@@ -133,8 +133,8 @@ class Flip:
                 nn_target = nn_target[::-1, :]
 
             if np.random.rand() < self.p_horizontal:
-                nn_input = nn_input[:, :-1, :]
-                nn_target = nn_target[:, :-1]
+                nn_input = nn_input[:, ::-1, :]
+                nn_target = nn_target[:, ::-1]
 
         sample[STR.NN_INPUT] = nn_input
         sample[STR.NN_TARGET] = nn_target
@@ -208,10 +208,10 @@ class ToTensor:
 
         ordering_input = [0, 3, 1, 2]
 
-        sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering_input))
+        sample[STR.NN_INPUT] = torch.from_numpy(nn_input.transpose(*ordering_input).copy())
 
         if nn_target is not None:
-            sample[STR.NN_TARGET] = torch.from_numpy(nn_target)
+            sample[STR.NN_TARGET] = torch.from_numpy(nn_target.copy())
 
         return sample
 

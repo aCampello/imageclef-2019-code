@@ -34,8 +34,6 @@ VALIDATION = "validation"
 
 LEARNING_RATE = "learning_rate"
 
-RANDOM_CROPPING = "random_cropping"
-
 COLOUR_MAPPING_FILE_PATH = "colour_mapping_file_path"
 
 LOSS_WEIGHT_MODIFIER = "loss_weight_modifier"
