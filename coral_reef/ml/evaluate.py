@@ -108,9 +108,9 @@ def find_best_cutting_sizes(image_file_paths, gt_file_paths, model, nn_input_siz
 
         results.append({
             "acc": np.round(acc, 2),
-            "acc_class": np.round(acc_class),
-            "mIoU": np.round(mIoU),
-            "fWIoU": np.round(fWIoU),
+            "acc_class": np.round(acc_class, 2),
+            "mIoU": np.round(mIoU, 2),
+            "fWIoU": np.round(fWIoU, 2),
             "window_sizes": window_sizes,
             "step_sizes": step_sizes,
             "cut_count_per_image": cut_count
