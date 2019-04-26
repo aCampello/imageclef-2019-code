@@ -12,6 +12,7 @@ from random import shuffle
 from scipy import spatial
 import matplotlib.pyplot as plt
 from coral_reef.constants import paths
+from coral_reef.constants import mapping
 
 
 def _calc_mask_stats(mask_folder_path, colour_mapping):
@@ -171,9 +172,7 @@ def calculate_split(mask_folder_path, colour_mapping, training_size=0.85):
 if __name__ == "__main__":
     mask_folder_path = "/home/aljo/filament/coral_reef/data/masks"
 
-    mappings_file_path = "/home/aljo/filament/coral_reef/data/colour_mapping.json"
-    with open(mappings_file_path, "r") as fp:
-        colour_mapping = json.load(fp)
+    colour_mapping = mapping.get_colour_mapping()
 
     files_train, files_valid = calculate_split(mask_folder_path, colour_mapping)
 

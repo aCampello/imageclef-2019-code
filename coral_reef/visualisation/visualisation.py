@@ -75,5 +75,5 @@ def plot_batch_object(nn_input_batch, nn_target_batch, colour_mapping):
     for i in range(nn_input_batch.shape[0]):
         image = nn_input_batch[i]
         class_id_mask = nn_target_batch[i]
-        mask = ml_utils.class_id_mask_to_colour_mask(class_id_mask, colour_mapping)
+        mask = ml_utils.class_id_mask_to_colour_mask(class_id_mask)
         plot_data(image, mask, colour_mapping)

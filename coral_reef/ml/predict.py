@@ -28,8 +28,9 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
     :param model: model used for prediction
     :param device: PyTorch device (cpu or gpu)
     :param nn_input_size: input size for the model
-    :param window_sizes:
-    :param step_sizes:
+    :param window_sizes: list of sizes that determine how the image will be cut (for sliding window). Image will be cut
+    into squares
+    :param step_sizes: list of step sizes for sliding window
     :param verbose: 0 if print statements should not be shown, 1 if they should
     :return: array containing the class ids
     """
@@ -73,11 +74,11 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
 def _predict_image(image, model, device, nn_input_size):
     """
 
-    :param image:
-    :param model:
-    :param device:
-    :param nn_input_size:
-    :return:
+    :param image: image to predict
+    :param model: model for prediction
+    :param device: PyTorch device (cpu or gpu)
+    :param nn_input_size: shape that the image will be scaled to
+    :return: nn output
     """
     # create transformations needed to preprocess image to go into the neural network
 
@@ -109,29 +110,22 @@ def _predict_image(image, model, device, nn_input_size):
     return output
 
 
-def predict(image_file_paths, instructions, res_fcn=None):
+def predict(image_file_paths, model, nn_input_size, res_fcn=None, window_sizes=None, step_sizes=None, device=None):
     """
     Segment images
     :param image_file_paths: paths to images that will be predicted
-    :param instructions: instructions used for prediction
-    :param res_fcn: custom method that will be called with the result prediction mask and the image name. If None, data
+    :param model: model used for prediction
+    :param nn_input_size: size that the images will be scaled to before feeding them into the nn
+    :param res_fcn: custom method that will be called with the result prediction mask and the image index. If None, data
     will be returned in a list
+    :param window_sizes: list of sizes that determine how the image will be cut (for sliding window). Image will be cut
+    into squares
+    :param step_sizes: list of step sizes for sliding window
+    :param device: PyTorch device (cpu or gpu)
     :return: list of prediction masks if res_fcn is None, else Nothing
     """
 
-    # load colour mapping
-    with open(instructions[STR.COLOUR_MAPPING_FILE_PATH], "r") as fp:
-        colour_mapping = json.load(fp)
-
-    model = DeepLab(num_classes=len(colour_mapping.keys()),
-                    backbone=instructions.get(STR.BACKBONE, "resnet"))
-    # load weights
-    load_state_dict(model, instructions[STR.STATE_DICT_FILE_PATH])
-
-    # choose gpu or cpu
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    model.to(device)
+    device = device if device is not None else torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     prediction_results = []
     for i, image_file_path in enumerate(image_file_paths):
@@ -139,24 +133,20 @@ def predict(image_file_paths, instructions, res_fcn=None):
 
         image = cv2.imread(image_file_path)[:, :, ::-1]
 
-        window_sizes = [500, 1000, 1500]
-        step_sizes = [350, 750, 1000]
-
-        # window_sizes = window_sizes[:1]
-        # step_sizes = step_sizes[:1]
+        window_sizes = window_sizes if window_sizes is not None else [500, 1000, 1500]
+        step_sizes = step_sizes if step_sizes is not None else [350, 750, 1000]
 
         class_id_mask = _predict_by_cutting(image=image,
                                             model=model,
                                             device=device,
-                                            nn_input_size=instructions[STR.NN_INPUT_SIZE],
+                                            nn_input_size=nn_input_size,
                                             window_sizes=window_sizes,
                                             step_sizes=step_sizes,
                                             verbose=1)
 
         # deal with the results. Either apply custom function or append to list
         if res_fcn is not None:
-            image_file_name = os.path.split(image_file_path)[1]
-            res_fcn(class_id_mask, image_file_name)
+            res_fcn(class_id_mask, i)
         else:
             prediction_results.append(class_id_mask)
 

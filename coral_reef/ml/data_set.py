@@ -18,17 +18,17 @@ def load_image(filepath):
 
 class DictArrayDataSet(Dataset):
 
-    def __init__(self, image_base_dir, data, colour_mapping, transformation=None):
+    def __init__(self, image_base_dir, data, num_classes, transformation=None):
         self.image_base_dir = image_base_dir
         self.image_data = data
-        self.colour_mapping = colour_mapping
+        self.num_classes = num_classes
         self.transformation = transformation
 
     def __len__(self):
         return len(self.image_data)
 
     def num_classes(self):
-        return len(self.colour_mapping.keys())
+        return self.num_classes
 
     def load_nn_input(self, index):
         item = self.image_data[index]
@@ -42,7 +42,7 @@ class DictArrayDataSet(Dataset):
         file_path_mask = os.path.join(self.image_base_dir, item[STR.MASK_NAME])
         mask = load_image(file_path_mask)[:, :, 0]
 
-        class_id_mask = ml_utils.colour_mask_to_class_id_mask(mask, self.colour_mapping)
+        class_id_mask = ml_utils.colour_mask_to_class_id_mask(mask)
 
         return class_id_mask
 

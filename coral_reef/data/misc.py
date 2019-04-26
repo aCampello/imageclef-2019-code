@@ -8,7 +8,8 @@ import numpy as np
 from scipy import ndimage
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from coral_reef.constants import paths
+from coral_reef.constants import paths, mapping
+
 
 
 def shrink_images(input_folder_path, output_folder_path, scale_factor=0.25, file_extension="png"):
@@ -151,10 +152,8 @@ def calculate_class_stats(mask_files, colour_mapping):
 
 
 def __create_stats_files_train_valid():
-    mappings_file_path = "/home/aljo/filament/coral_reef/data/colour_mapping.json"
-    with open(mappings_file_path, "r") as fp:
-        colour_mapping = json.load(fp)
-    #
+
+    colour_mapping = mapping.get_colour_mapping()
 
     for d_type in ["train", "valid"]:
         with open(os.path.join(paths.DATA_FOLDER_PATH, "data_" + d_type + ".json"), "r") as fp:
@@ -170,9 +169,7 @@ def __create_stats_files_train_valid():
 
 
 def __create_stats_files_train_hard():
-    mappings_file_path = "/home/aljo/filament/coral_reef/data/colour_mapping.json"
-    with open(mappings_file_path, "r") as fp:
-        colour_mapping = json.load(fp)
+    colour_mapping = mapping.get_colour_mapping()
 
     with open(os.path.join(paths.DATA_FOLDER_PATH, "data_train_hard.json"), "r") as fp:
         data = json.load(fp)
