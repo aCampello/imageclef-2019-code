@@ -13,6 +13,8 @@ from coral_reef.constants import strings as STR
 
 def create_validation_data(image_files, mask_files, output_folder_name, window_sizes=None, step_sizes=None):
     """
+    THIS SHOULD NOT BE USED ANYMORE. THE VALIDATION IS NOW DONE ON WHOLE IMAGES
+
     Crop big images into smaller ones, which can then be used for validation. This is done, so that there is no
     randomness in the validation data (training data is randomly cropped on the fly during training).
     The crops are done in an overlapping, sliding-window manner, the relevant parameters are window_sizes and
@@ -24,6 +26,10 @@ def create_validation_data(image_files, mask_files, output_folder_name, window_s
     :param step_sizes: list of integers specifying the step sizes
     :return:
     """
+
+    if True:
+        print("THIS SHOULD NOT BE USED ANYMORE. THE VALIDATION IS NOW DONE ON WHOLE IMAGES")
+        return
 
     # create output folder
     output_folder_path = os.path.join(paths.DATA_FOLDER_PATH, output_folder_name)
@@ -80,17 +86,3 @@ def create_validation_data(image_files, mask_files, output_folder_name, window_s
         json.dump(data, fp, indent=4)
 
 
-def main():
-    # get images paths that belong to uncropped validation images
-    data_file_train = os.path.join(paths.DATA_FOLDER_PATH, "data_valid_BIG.json")
-    with open(data_file_train, "r") as fp:
-        data_valid = json.load(fp)
-
-    image_files = [os.path.join(paths.DATA_FOLDER_PATH, d[STR.IMAGE_NAME]) for d in data_valid]
-    mask_files = [os.path.join(paths.DATA_FOLDER_PATH, d[STR.MASK_NAME]) for d in data_valid]
-
-    create_validation_data(image_files=image_files, mask_files=mask_files, output_folder_name="validation")
-
-
-if __name__ == "__main__":
-    main()

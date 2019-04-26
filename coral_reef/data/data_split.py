@@ -192,5 +192,5 @@ if __name__ == "__main__":
     with open(os.path.join(paths.DATA_FOLDER_PATH, "data_train.json"), "w") as fp:
         json.dump(data_train, fp, indent=4)
 
-    with open(os.path.join(paths.DATA_FOLDER_PATH, "data_valid_BIG.json"), "w") as fp:
+    with open(os.path.join(paths.DATA_FOLDER_PATH, "data_valid.json"), "w") as fp:
         json.dump(data_val, fp, indent=4)

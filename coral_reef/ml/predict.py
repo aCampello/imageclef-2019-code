@@ -51,9 +51,8 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
     # we don't know the class count now, so this is just a placeholder
     combined_output = None
 
-    pbar = tqdm(zip(cuts, start_points))
+    for cut_image, start_point in zip(cuts, start_points):
 
-    for cut_image, start_point in pbar:
         output = _predict_image(cut_image, model, device, nn_input_size)
 
         # we didn't know the number of classes before prediction, so create output array now
@@ -128,8 +127,11 @@ def predict(image_file_paths, model, nn_input_size, res_fcn=None, window_sizes=N
     device = device if device is not None else torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     prediction_results = []
-    for i, image_file_path in enumerate(image_file_paths):
-        print("predicting image {} of {}".format(i + 1, len(image_file_paths)))
+
+    pbar = tqdm(image_file_paths, ncols=50)
+
+    for i, image_file_path in enumerate(pbar):
+        #print("predicting image {} of {}".format(i + 1, len(image_file_paths)))
 
         image = cv2.imread(image_file_path)[:, :, ::-1]
 
@@ -142,7 +144,7 @@ def predict(image_file_paths, model, nn_input_size, res_fcn=None, window_sizes=N
                                             nn_input_size=nn_input_size,
                                             window_sizes=window_sizes,
                                             step_sizes=step_sizes,
-                                            verbose=1)
+                                            verbose=0)
 
         # deal with the results. Either apply custom function or append to list
         if res_fcn is not None:

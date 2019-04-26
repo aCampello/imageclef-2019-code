@@ -21,14 +21,14 @@ class DictArrayDataSet(Dataset):
     def __init__(self, image_base_dir, data, num_classes, transformation=None):
         self.image_base_dir = image_base_dir
         self.image_data = data
-        self.num_classes = num_classes
+        self.class_count = num_classes
         self.transformation = transformation
 
     def __len__(self):
         return len(self.image_data)
 
     def num_classes(self):
-        return self.num_classes
+        return self.class_count
 
     def load_nn_input(self, index):
         item = self.image_data[index]

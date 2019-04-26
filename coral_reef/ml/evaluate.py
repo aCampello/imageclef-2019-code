@@ -49,10 +49,11 @@ def evaluate(image_file_paths, gt_file_paths, model, nn_input_size, num_classes,
                         step_sizes=step_sizes,
                         device=device)
 
-    acc = evaluator.Pixel_Accuracy()
-    acc_class = evaluator.Pixel_Accuracy_Class()
-    mIoU = evaluator.Mean_Intersection_over_Union()
-    fWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
+    with np.errstate(divide='ignore', invalid='ignore'):
+        acc = evaluator.Pixel_Accuracy()
+        acc_class = evaluator.Pixel_Accuracy_Class()
+        mIoU = evaluator.Mean_Intersection_over_Union()
+        fWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
 
     return acc, acc_class, mIoU, fWIoU
 
@@ -102,14 +103,14 @@ def find_best_cutting_sizes(image_file_paths, gt_file_paths, model, nn_input_siz
                                                device=device)
 
         # determine the number of images that each image was cut into
-        cut_count = _determine_cut_count()
+        cut_count = _determine_cut_count(image_file_paths, window_sizes, step_sizes)
         cut_count /= len(image_file_paths)
 
         results.append({
-            "acc": acc,
-            "acc_class": acc_class,
-            "mIoU": mIoU,
-            "fWIoU": fWIoU,
+            "acc": np.round(acc, 2),
+            "acc_class": np.round(acc_class),
+            "mIoU": np.round(mIoU),
+            "fWIoU": np.round(fWIoU),
             "window_sizes": window_sizes,
             "step_sizes": step_sizes,
             "cut_count_per_image": cut_count
