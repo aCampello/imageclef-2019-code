@@ -74,7 +74,7 @@ def find_best_cutting_sizes(image_file_paths, gt_file_paths, model, nn_input_siz
     window_sizes_list = []
     step_sizes_list = []
 
-    step_size_fractions = [1, 1 / 2, 1 / 3]
+    step_size_fractions = [0.8, 0.5, 0.3]
     for ss_fraction in step_size_fractions:
         window_sizes_list.append([500, 700, 1000, 1500])
         step_sizes_list.append([int(w * ss_fraction) for w in window_sizes_list[-1]])
@@ -85,7 +85,7 @@ def find_best_cutting_sizes(image_file_paths, gt_file_paths, model, nn_input_siz
         window_sizes_list.append([700, 1000, 1500])
         step_sizes_list.append([int(w * ss_fraction) for w in window_sizes_list[-1]])
 
-        window_sizes_list.append([500, 700, 1000, 1500])
+        window_sizes_list.append([700, 1000])
         step_sizes_list.append([int(w * ss_fraction) for w in window_sizes_list[-1]])
 
     results = []
