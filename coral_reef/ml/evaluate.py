@@ -33,7 +33,8 @@ def evaluate(image_file_paths, gt_file_paths, model, nn_input_size, num_classes,
     model.eval()
     evaluator = Evaluator(num_classes)
 
-    def ev(pred_class_id_mask, index):
+    def ev(prediction, index):
+        pred_class_id_mask = np.argmax(prediction, axis=-1)
         gt_colour_mask = cv2.imread(gt_file_paths[index])[:, :, 0]
         gt_class_id_mask = colour_mask_to_class_id_mask(gt_colour_mask)
 

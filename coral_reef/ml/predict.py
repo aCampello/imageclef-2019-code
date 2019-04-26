@@ -50,6 +50,7 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
     # create array that combines the output predictions
     # we don't know the class count now, so this is just a placeholder
     combined_output = None
+    counts = None  # this will be used to convert the combined output later into scores/confidences again
 
     for cut_image, start_point in zip(cuts, start_points):
 
@@ -58,6 +59,7 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
         # we didn't know the number of classes before prediction, so create output array now
         if combined_output is None:
             combined_output = np.zeros((image.shape[:2]) + (output.shape[-1],))
+            counts = np.zeros((image.shape[:2]) + (output.shape[-1],))
 
         start_x, end_x = start_point[0], start_point[0] + cut_image.shape[1]
         start_y, end_y = start_point[1], start_point[1] + cut_image.shape[0]
@@ -65,9 +67,13 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
         # each of the overlaps creates "votes" for its corresponding pixel which we add up
         combined_output[start_y: end_y, start_x:end_x] += output
 
-    class_id_mask = np.argmax(combined_output, axis=-1)
+        # store information how often each pixel got votes so that we can calculate the average later
+        counts[start_y: end_y, start_x:end_x] += 1
 
-    return class_id_mask
+    # turn it back into confidences
+    combined_output /= counts
+
+    return combined_output
 
 
 def _predict_image(image, model, device, nn_input_size):
@@ -131,26 +137,26 @@ def predict(image_file_paths, model, nn_input_size, res_fcn=None, window_sizes=N
     pbar = tqdm(image_file_paths, ncols=50)
 
     for i, image_file_path in enumerate(pbar):
-        #print("predicting image {} of {}".format(i + 1, len(image_file_paths)))
+        # print("predicting image {} of {}".format(i + 1, len(image_file_paths)))
 
         image = cv2.imread(image_file_path)[:, :, ::-1]
 
         window_sizes = window_sizes if window_sizes is not None else [500, 1000, 1500]
         step_sizes = step_sizes if step_sizes is not None else [350, 750, 1000]
 
-        class_id_mask = _predict_by_cutting(image=image,
-                                            model=model,
-                                            device=device,
-                                            nn_input_size=nn_input_size,
-                                            window_sizes=window_sizes,
-                                            step_sizes=step_sizes,
-                                            verbose=0)
+        prediction = _predict_by_cutting(image=image,
+                                         model=model,
+                                         device=device,
+                                         nn_input_size=nn_input_size,
+                                         window_sizes=window_sizes,
+                                         step_sizes=step_sizes,
+                                         verbose=0)
 
         # deal with the results. Either apply custom function or append to list
         if res_fcn is not None:
-            res_fcn(class_id_mask, i)
+            res_fcn(prediction, i)
         else:
-            prediction_results.append(class_id_mask)
+            prediction_results.append(prediction)
 
     if res_fcn is None:
         return prediction_results
