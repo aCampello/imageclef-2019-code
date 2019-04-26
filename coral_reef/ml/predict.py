@@ -8,12 +8,13 @@ from torchvision import transforms
 from tqdm import tqdm
 from scipy.ndimage import zoom
 import cv2
+import matplotlib.pyplot as plt
 
 from coral_reef.ml.data_set import Normalize, Resize, ToTensor
 from coral_reef.constants import paths
 from coral_reef.constants import strings as STR
 
-from coral_reef.ml.utils import load_state_dict, cut_windows
+from coral_reef.ml.utils import load_state_dict, cut_windows, softmax
 from coral_reef.utils.print_utils import Printer
 
 sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PATH, "utils")])
@@ -58,8 +59,8 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
 
         # we didn't know the number of classes before prediction, so create output array now
         if combined_output is None:
-            combined_output = np.zeros((image.shape[:2]) + (output.shape[-1],))
-            counts = np.zeros((image.shape[:2]) + (output.shape[-1],))
+            combined_output = np.zeros((image.shape[:2]) + (output.shape[-1],), dtype=np.float32)
+            counts = np.zeros(image.shape[:2], dtype=np.uint16)
 
         start_x, end_x = start_point[0], start_point[0] + cut_image.shape[1]
         start_y, end_y = start_point[1], start_point[1] + cut_image.shape[0]
@@ -71,7 +72,8 @@ def _predict_by_cutting(image, model, device, nn_input_size, window_sizes, step_
         counts[start_y: end_y, start_x:end_x] += 1
 
     # turn it back into confidences
-    combined_output /= counts
+    for i in range(combined_output.shape[-1]):
+        combined_output[:, :, i] /= counts.astype(np.float32)
 
     return combined_output
 
@@ -107,7 +109,7 @@ def _predict_image(image, model, device, nn_input_size):
     output = output.detach().cpu().numpy()
     output = output[0]  # remove the first dimension which corresponds to the index in the batch
     output = output.transpose(1, 2, 0)
-
+    output = softmax(output, axis=-1)
     # scale output up to original size
     factor = image.shape[0] / output.shape[0]
     output = zoom(output, [factor, factor, 1], order=0)

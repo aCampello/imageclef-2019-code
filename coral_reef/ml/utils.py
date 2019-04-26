@@ -10,7 +10,6 @@ from coral_reef.constants import mapping
 from tensorboardX import SummaryWriter
 
 
-
 def colour_mask_to_class_id_mask(colour_mask):
     """
     :param colour_mask:
@@ -69,8 +68,8 @@ def cut_windows(image, window_size, step_size=None):
     Cut an image into several, equally sized windows. step size determines the overlap of the windows.
     :param image: image to be cut
     :param window_size: size of the square windows
-    :param step_size: step size between windows, determines overlap. Depending on the image size, window size and
-     step size it may not be possible to ensure the given step size since a constant window size is preferred
+    :param step_size: step size between windows, determines overlap. Depending on the image size and window size,
+    it may not be possible to ensure the given step size since a constant window size is preferred
     :return: list of cut images and list of original, upper left corner points (x, y)
     """
     step_size = int(window_size / 2) if step_size is None else step_size
@@ -79,28 +78,70 @@ def cut_windows(image, window_size, step_size=None):
     cuts = []
     start_points = []
 
-    for x in range(0, w - step_size, step_size):
+    for x in range(0, w, step_size):
         end_x = np.min([x + window_size, w])
         start_x = end_x - window_size
 
-        # stop if the current rectangle has been done before
-        if len(start_points) > 0 and start_x == start_points[-1][0]:
-            break
-
-        for y in range(0, h - step_size, step_size):
+        for y in range(0, h, step_size):
             end_y = np.min([y + window_size, h])
             start_y = end_y - window_size
 
-            # stop if the current rectangle has been done before
-            if len(start_points) > 0 and start_y == start_points[-1][1]:
-                break
-
-            cuts.append(image[start_y:end_y, start_x:end_x])
-            start_points.append([start_x, start_y])
+            pt = [start_x, start_y]
+            # only add  if it hasn't been added before
+            if pt not in start_points:
+                cuts.append(image[start_y:end_y, start_x:end_x])
+                start_points.append([start_x, start_y])
 
             # print("x: {}/ y:{} to x: {}/ y:{}".format(start_x, start_y, end_x, end_y))
 
     return cuts, start_points
+
+
+def softmax(X, theta=1.0, axis=None):
+    #
+    # from https://nolanbconaway.github.io/blog/2017/softmax-numpy
+    #
+    """
+    Compute the softmax of each element along an axis of X.
+
+    Parameters
+    ----------
+    X: ND-Array. Probably should be floats.
+    theta (optional): float parameter, used as a multiplier
+        prior to exponentiation. Default = 1.0
+    axis (optional): axis to compute values along. Default is the
+        first non-singleton axis.
+
+    Returns an array the same size as X. The result will sum to 1
+    along the specified axis.
+    """
+
+    # make X at least 2d
+    y = np.atleast_2d(X)
+
+    # find axis
+    if axis is None:
+        axis = next(j[0] for j in enumerate(y.shape) if j[1] > 1)
+
+    # multiply y against the theta parameter,
+    y = y * float(theta)
+
+    # subtract the max for numerical stability
+    y = y - np.expand_dims(np.max(y, axis=axis), axis)
+
+    # exponentiate y
+    y = np.exp(y)
+
+    # take the sum along the specified axis
+    ax_sum = np.expand_dims(np.sum(y, axis=axis), axis)
+
+    # finally: divide elementwise
+    p = y / ax_sum
+
+    # flatten if X was 1D
+    if len(X.shape) == 1: p = p.flatten()
+
+    return p
 
 
 def calc_rect_size(rect):
