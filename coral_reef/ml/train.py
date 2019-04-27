@@ -125,6 +125,10 @@ class Trainer:
             print("loading state_dict from:")
             print(state_dict_file_path)
             load_state_dict(self.model, state_dict_file_path)
+            
+        learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
+        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
+                        {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
 
         # choose gpu or cpu
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -135,9 +139,7 @@ class Trainer:
 
         self.model.to(self.device)
 
-        learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
-        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
-                        {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
+
 
         # Define Optimizer
         self.optimizer = torch.optim.SGD(train_params,
