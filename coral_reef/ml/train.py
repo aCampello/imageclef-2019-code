@@ -125,7 +125,7 @@ class Trainer:
             print("loading state_dict from:")
             print(state_dict_file_path)
             load_state_dict(self.model, state_dict_file_path)
-            
+
         learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
         train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
                         {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
@@ -138,8 +138,6 @@ class Trainer:
                 self.model = nn.DataParallel(self.model)
 
         self.model.to(self.device)
-
-
 
         # Define Optimizer
         self.optimizer = torch.optim.SGD(train_params,
@@ -225,13 +223,15 @@ class Trainer:
         image_file_paths = [os.path.join(self.image_base_dir, d[STR.IMAGE_NAME]) for d in self.data_valid]
         gt_file_paths = [os.path.join(self.image_base_dir, d[STR.MASK_NAME]) for d in self.data_valid]
 
+        window_sizes = [self.instructions.get(STR.CROP_SIZE_MIN, 500), 700, 1000, 1500]
+        step_sizes = [int(0.8 * w) for w in window_sizes]
         acc, acc_class, mIoU, fWIoU = evaluate(image_file_paths=image_file_paths,
                                                gt_file_paths=gt_file_paths,
                                                model=self.model,
                                                nn_input_size=self.instructions[STR.NN_INPUT_SIZE],
                                                num_classes=len(self.colour_mapping.keys()),
-                                               window_sizes=[500, 700, 1000, 1500],
-                                               step_sizes=[400, 560, 800, 1200],
+                                               window_sizes=window_sizes,
+                                               step_sizes=step_sizes,
                                                device=self.device)
 
         self.writer.add_scalar('val/mIoU', mIoU, epoch)

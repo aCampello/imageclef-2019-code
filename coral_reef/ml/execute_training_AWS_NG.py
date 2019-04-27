@@ -6,14 +6,14 @@ from coral_reef.ml import train
 from coral_reef.constants import strings as STR
 from coral_reef.constants import paths
 
-nn_input_size = 512
-output_stride = 8
+nn_input_size = 640
+output_stride = 16
 multi_gpu = True
 
 
 def _get_instructions_train_normal():
-    images_per_batch = int(2 * 2)
-    crops_per_image = int(16 * 2)
+    images_per_batch = int(2 * 1)
+    crops_per_image = int(16 * 1)
 
     instructions = {
         STR.MODEL_NAME: "coral_aws_V1",
