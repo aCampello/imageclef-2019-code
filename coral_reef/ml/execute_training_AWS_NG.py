@@ -16,7 +16,7 @@ multi_gpu = True
 
 def _get_instructions_train_normal():
     images_per_batch = int(2 * 1)
-    crops_per_image = int(16 * 2)
+    crops_per_image = int(22 * 1)
 
     instructions = {
         STR.MODEL_NAME: "coral_aws_V1",
