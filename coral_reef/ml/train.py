@@ -223,8 +223,8 @@ class Trainer:
         image_file_paths = [os.path.join(self.image_base_dir, d[STR.IMAGE_NAME]) for d in self.data_valid]
         gt_file_paths = [os.path.join(self.image_base_dir, d[STR.MASK_NAME]) for d in self.data_valid]
 
-        window_sizes = [self.instructions.get(STR.CROP_SIZE_MIN, 500), 700, 1000, 1500]
-        step_sizes = [int(0.8 * w) for w in window_sizes]
+        window_sizes = [self.instructions.get(STR.CROP_SIZE_MIN, 500), 1000]
+        step_sizes = [1000, 1000]
         acc, acc_class, mIoU, fWIoU = evaluate(image_file_paths=image_file_paths,
                                                gt_file_paths=gt_file_paths,
                                                model=self.model,

@@ -152,7 +152,7 @@ def predict(image_file_paths, model, nn_input_size, res_fcn=None, window_sizes=N
                                          nn_input_size=nn_input_size,
                                          window_sizes=window_sizes,
                                          step_sizes=step_sizes,
-                                         verbose=0)
+                                         verbose=1)
 
         # deal with the results. Either apply custom function or append to list
         if res_fcn is not None:
