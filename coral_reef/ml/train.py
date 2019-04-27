@@ -75,6 +75,8 @@ class Trainer:
         apply_random_cropping = (STR.CROPS_PER_IMAGE in instructions.keys()) and \
                                 (STR.IMAGES_PER_BATCH in instructions.keys())
 
+        print("{}applying random cropping".format("" if apply_random_cropping else "_NOT_ "))
+
         t = [Normalize()]
         if apply_random_cropping:
             t.append(RandomCrop(
@@ -110,22 +112,13 @@ class Trainer:
                                                 shuffle=True,
                                                 collate_fn=custom_collate)
 
-        # dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
-        #                                  data=data_valid,
-        #                                  colour_mapping=self.colour_mapping,
-        #                                  transformation=transformations_valid)
-        #
-        # self.data_loader_valid = DataLoader(dataset=dataset_valid,
-        #                                     batch_size=self.batch_size,
-        #                                     shuffle=False,
-        #                                     collate_fn=custom_collate)
-
         self.num_classes = dataset_train.num_classes()
 
         # define model
         print("Building model")
         self.model = DeepLab(num_classes=self.num_classes,
-                             backbone=instructions.get(STR.BACKBONE, "resnet"))
+                             backbone=instructions.get(STR.BACKBONE, "resnet"),
+                             output_stride=instructions.get(STR.DEEPLAB_OUTPUT_STRIDE, 16))
 
         # load weights
         if state_dict_file_path is not None:
@@ -135,9 +128,10 @@ class Trainer:
 
         # choose gpu or cpu
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # if torch.cuda.device_count() > 1:
-        #   print("Let's use ", torch.cuda.device_count(), " GPUs!")
-        #   temp_net = nn.DataParallel(temp_net)
+        if instructions.get(STR.MULTI_GPU, False):
+            if torch.cuda.device_count() > 1:
+                print("Using ", torch.cuda.device_count(), " GPUs!")
+                self.model = nn.DataParallel(self.model)
 
         self.model.to(self.device)
 
@@ -234,8 +228,8 @@ class Trainer:
                                                model=self.model,
                                                nn_input_size=self.instructions[STR.NN_INPUT_SIZE],
                                                num_classes=len(self.colour_mapping.keys()),
-                                               window_sizes=None,
-                                               step_sizes=None,
+                                               window_sizes=[500, 700, 1000, 1500],
+                                               step_sizes=[400, 560, 800, 1200],
                                                device=self.device)
 
         self.writer.add_scalar('val/mIoU', mIoU, epoch)

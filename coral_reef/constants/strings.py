@@ -10,6 +10,7 @@ NN_TARGET = "nn_target"
 MODEL_NAME = "model_name"
 
 BACKBONE = "backbone"
+DEEPLAB_OUTPUT_STRIDE = "deeplab_output_stride"
 
 MODEL = "model"
 
@@ -35,3 +36,5 @@ VALIDATION = "validation"
 LEARNING_RATE = "learning_rate"
 
 LOSS_WEIGHT_MODIFIER = "loss_weight_modifier"
+
+MULTI_GPU = "multi_gpu"
