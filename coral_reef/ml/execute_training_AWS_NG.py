@@ -19,7 +19,7 @@ def _get_instructions_train_normal():
     crops_per_image = int(22 * 1)
 
     instructions = {
-        STR.MODEL_NAME: "coral_aws_V1",
+        STR.MODEL_NAME: "TEST",
 
         STR.IMAGES_PER_BATCH: images_per_batch,
 
@@ -99,11 +99,11 @@ def execute_training_normal():
     with open(os.path.join(data_folder_path, "data_train.json"), "r") as fp:
         data_train = json.load(fp)
 
-    with open(os.path.join(data_folder_path, "data_valid.json"), "r") as fp:
+    with open(os.path.join(data_folder_path, "data_valid_cropped.json"), "r") as fp:
         data_valid = json.load(fp)
 
-    shuffle(data_train)
-    shuffle(data_valid)
+    data_train = data_train[:2]
+    data_valid = data_valid[:2]
 
     train.train(data_train=data_train,
                 data_valid=data_valid,
@@ -123,11 +123,9 @@ def execute_training_hard():
     with open(os.path.join(data_folder_path, "data_train_hard.json"), "r") as fp:
         data_train = json.load(fp)
 
-    with open(os.path.join(data_folder_path, "data_valid.json"), "r") as fp:
+    with open(os.path.join(data_folder_path, "data_valid_cropped.json"), "r") as fp:
         data_valid = json.load(fp)
 
-    shuffle(data_train)
-    shuffle(data_valid)
 
     train.train(data_train=data_train,
                 data_valid=data_valid,
