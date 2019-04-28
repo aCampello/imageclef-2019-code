@@ -19,7 +19,7 @@ def _get_instructions_train_normal():
     crops_per_image = int(22 * 1)
 
     instructions = {
-        STR.MODEL_NAME: "TEST",
+        STR.MODEL_NAME: "coral_aws_V3",
 
         STR.IMAGES_PER_BATCH: images_per_batch,
 
@@ -39,7 +39,7 @@ def _get_instructions_train_normal():
 
         STR.DEEPLAB_OUTPUT_STRIDE: output_stride,
 
-        # STR.STATE_DICT_FILE_PATH: os.path.join(paths.MODELS_FOLDER_PATH, "coral_V3", "model_best.pth"),
+        STR.STATE_DICT_FILE_PATH: os.path.join(paths.MODELS_FOLDER_PATH, "coral_aws_V1", "model_best.pth"),
 
         STR.CLASS_STATS_FILE_PATH: os.path.join(paths.DATA_FOLDER_PATH, "class_stats_train.json"),
 
@@ -102,8 +102,8 @@ def execute_training_normal():
     with open(os.path.join(data_folder_path, "data_valid_cropped.json"), "r") as fp:
         data_valid = json.load(fp)
 
-    data_train = data_train[:2]
-    data_valid = data_valid[:2]
+    data_train = data_train
+    data_valid = data_valid
 
     train.train(data_train=data_train,
                 data_valid=data_valid,
