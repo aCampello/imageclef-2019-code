@@ -146,7 +146,7 @@ def __create_submission():
 
 
 def __verify_submission():
-    file_path = os.path.join(paths.DATA_FOLDER_PATH, "out", "predictions.txt")"
+    file_path = os.path.join(paths.DATA_FOLDER_PATH, "out", "predictions.txt")
     colour_mapping = mapping.get_colour_mapping()
 
     with open(file_path, "r") as fp:
