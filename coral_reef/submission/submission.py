@@ -72,11 +72,16 @@ def create_submission_file(prediction_file_names, output_file_path):
 
             # apply opening to mask to remove small coral-areas
             # TODO: the size needs to be set to something sensible!
-            kernel = np.ones((21, 21), np.uint8)
+            kernel_size = (31, 31)
+            kernel = np.ones(kernel_size, np.uint8)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
-            kernel = np.ones((21, 21), np.uint8)
+            kernel = np.ones(kernel_size, np.uint8)
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+            # if there are less than x pixel, skip the class
+            if np.sum(mask/255) < 100:
+                continue
 
             line += "{} ".format(class_names[class_id])
             # find connected components
@@ -89,6 +94,9 @@ def create_submission_file(prediction_file_names, output_file_path):
                 cv2.floodFill(cc_mask, None, (non_nulls[1][0], non_nulls[0][0]), 255)
 
                 polygon = _get_contour(cc_mask)
+
+                print("{} points".format(polygon.shape[0]))
+
                 cc_mask = cc_mask / 255
                 confidence = (prediction[:, :, class_id] * cc_mask).sum() / cc_mask.sum()
                 # print("confidence: {:.2f}".format(confidence))
@@ -96,6 +104,7 @@ def create_submission_file(prediction_file_names, output_file_path):
                     line += ","
                 line += "{:.2f}:".format(confidence)
                 line += _create_polygon_string(polygon)
+
             line += ";"
         line = line[:-1]  # remove last semicolon
         out_lines.append(line)
