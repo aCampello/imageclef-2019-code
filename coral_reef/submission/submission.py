@@ -140,13 +140,13 @@ def __create_submission():
     predictions_folder_path = os.path.join(paths.DATA_FOLDER_PATH, "predictions")
     files = glob.glob(os.path.join(predictions_folder_path, "*.npy"))
 
-    out_file_path = "/home/aljo/filament/coral_reef/data/out/predictions.txt"
+    out_file_path = os.path.join(paths.DATA_FOLDER_PATH, "out", "predictions.txt")
 
     create_submission_file(files, out_file_path)
 
 
 def __verify_submission():
-    file_path = "/home/aljo/filament/coral_reef/data/out/predictions.txt"
+    file_path = os.path.join(paths.DATA_FOLDER_PATH, "out", "predictions.txt")"
     colour_mapping = mapping.get_colour_mapping()
 
     with open(file_path, "r") as fp:
