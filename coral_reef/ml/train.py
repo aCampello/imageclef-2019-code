@@ -21,13 +21,15 @@ from coral_reef.visualisation import visualisation
 
 from coral_reef.ml.data_set import DictArrayDataSet, RandomCrop, Resize, custom_collate, ToTensor, Flip, Normalize
 from coral_reef.ml.utils import load_state_dict, Saver, calculate_class_weights
-from coral_reef.ml.evaluate import evaluate
+
 
 sys.path.extend([paths.DEEPLAB_FOLDER_PATH, os.path.join(paths.DEEPLAB_FOLDER_PATH, "utils")])
 
 from modeling.deeplab import DeepLab
 from loss import SegmentationLosses
 from lr_scheduler import LR_Scheduler
+from metrics import Evaluator
+
 
 
 class Trainer:
@@ -90,7 +92,7 @@ class Trainer:
         transformations_train = transforms.Compose(t)
 
         # define transformers for validation
-        # transformations_valid = transforms.Compose([Normalize(), Resize(nn_input_size), ToTensor()])
+        transformations_valid = transforms.Compose([Normalize(), Resize(nn_input_size), ToTensor()])
 
         # set up data loaders
         dataset_train = DictArrayDataSet(image_base_dir=image_base_dir,
@@ -112,6 +114,16 @@ class Trainer:
                                                 shuffle=True,
                                                 collate_fn=custom_collate)
 
+        dataset_valid = DictArrayDataSet(image_base_dir=image_base_dir,
+                                         data=data_valid,
+                                         num_classes=len(self.colour_mapping.keys()),
+                                         transformation=transformations_valid)
+
+        self.data_loader_valid = DataLoader(dataset=dataset_valid,
+                                            batch_size=self.batch_size,
+                                            shuffle=False,
+                                            collate_fn=custom_collate)
+
         self.num_classes = dataset_train.num_classes()
 
         # define model
@@ -126,6 +138,10 @@ class Trainer:
             print(state_dict_file_path)
             load_state_dict(self.model, state_dict_file_path)
 
+        learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
+        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
+                        {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
+
         # choose gpu or cpu
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if instructions.get(STR.MULTI_GPU, False):
@@ -134,10 +150,6 @@ class Trainer:
                 self.model = nn.DataParallel(self.model)
 
         self.model.to(self.device)
-
-        learning_rate = instructions.get(STR.LEARNING_RATE, 1e-5)
-        train_params = [{'params': self.model.get_1x_lr_params(), 'lr': learning_rate},
-                        {'params': self.model.get_10x_lr_params(), 'lr': learning_rate}]
 
         # Define Optimizer
         self.optimizer = torch.optim.SGD(train_params,
@@ -156,6 +168,9 @@ class Trainer:
         else:
             class_weights = None
         self.criterion = SegmentationLosses(weight=class_weights, cuda=self.device.type != "cpu").build_loss()
+
+        # Define Evaluator
+        self.evaluator = Evaluator(self.num_classes)
 
         # Define lr scheduler
         self.scheduler = None
@@ -219,25 +234,43 @@ class Trainer:
     def validation(self, epoch):
 
         self.model.eval()
+        self.evaluator.reset()
+        test_loss = 0.0
 
-        image_file_paths = [os.path.join(self.image_base_dir, d[STR.IMAGE_NAME]) for d in self.data_valid]
-        gt_file_paths = [os.path.join(self.image_base_dir, d[STR.MASK_NAME]) for d in self.data_valid]
+        pbar = tqdm(self.data_loader_valid, desc='\r')
+        num_batches_val = len(self.data_loader_valid)
 
-        acc, acc_class, mIoU, fWIoU = evaluate(image_file_paths=image_file_paths,
-                                               gt_file_paths=gt_file_paths,
-                                               model=self.model,
-                                               nn_input_size=self.instructions[STR.NN_INPUT_SIZE],
-                                               num_classes=len(self.colour_mapping.keys()),
-                                               window_sizes=[500, 700, 1000, 1500],
-                                               step_sizes=[400, 560, 800, 1200],
-                                               device=self.device)
+        for i, sample in enumerate(pbar):
+            # set input and target
+            nn_input = sample[STR.NN_INPUT].to(self.device)
+            nn_target = sample[STR.NN_TARGET].to(self.device, dtype=torch.float)
 
+            with torch.no_grad():
+                output = self.model(nn_input)
+
+            loss = self.criterion(output, nn_target)
+            test_loss += loss.item()
+            pbar.set_description('Test loss: %.3f' % (test_loss / (i + 1)))
+            pred = output.data.cpu().numpy()
+            pred = np.argmax(pred, axis=1)
+            nn_target = nn_target.cpu().numpy()
+            # Add batch sample into evaluator
+            self.evaluator.add_batch(nn_target, pred)
+
+        # Fast test during the training
+        Acc = self.evaluator.Pixel_Accuracy()
+        Acc_class = self.evaluator.Pixel_Accuracy_Class()
+        mIoU = self.evaluator.Mean_Intersection_over_Union()
+        FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        self.writer.add_scalar('val/Acc', acc, epoch)
-        self.writer.add_scalar('val/Acc_class', acc_class, epoch)
-        self.writer.add_scalar('val/fwIoU', fWIoU, epoch)
+        self.writer.add_scalar('val/Acc', Acc, epoch)
+        self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
+        self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
         print('Validation:')
-        print("Acc:{:.2f}, Acc_class:{:.2f}, mIoU:{:.2f}, fwIoU: {:.2f}".format(acc, acc_class, mIoU, fWIoU))
+        print("[Epoch: {}, num crops: {}]".format(epoch, num_batches_val * self.batch_size))
+        print("Acc:{:.2f}, Acc_class:{:.2f}, mIoU:{:.2f}, fwIoU: {:.2f}".format(Acc, Acc_class, mIoU, FWIoU))
+        print("Loss: {:.2f}".format(test_loss))
 
         new_pred = mIoU
         is_best = new_pred > self.best_prediction

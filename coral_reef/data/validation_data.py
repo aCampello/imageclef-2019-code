@@ -5,6 +5,7 @@ import glob
 
 import cv2
 from tqdm import tqdm
+import numpy as np
 
 from coral_reef.ml.utils import cut_windows
 from coral_reef.constants import paths
@@ -13,8 +14,6 @@ from coral_reef.constants import strings as STR
 
 def create_validation_data(image_files, mask_files, output_folder_name, window_sizes=None, step_sizes=None):
     """
-    THIS SHOULD NOT BE USED ANYMORE. THE VALIDATION IS NOW DONE ON WHOLE IMAGES
-
     Crop big images into smaller ones, which can then be used for validation. This is done, so that there is no
     randomness in the validation data (training data is randomly cropped on the fly during training).
     The crops are done in an overlapping, sliding-window manner, the relevant parameters are window_sizes and
@@ -26,10 +25,6 @@ def create_validation_data(image_files, mask_files, output_folder_name, window_s
     :param step_sizes: list of integers specifying the step sizes
     :return:
     """
-
-    if True:
-        print("THIS SHOULD NOT BE USED ANYMORE. THE VALIDATION IS NOW DONE ON WHOLE IMAGES")
-        return
 
     # create output folder
     output_folder_path = os.path.join(paths.DATA_FOLDER_PATH, output_folder_name)
@@ -59,6 +54,12 @@ def create_validation_data(image_files, mask_files, output_folder_name, window_s
             cuts += cts
             start_points += pts
 
+        # only do it for a number of random cuts
+        cuts_per_image = 32
+        indices = np.random.permutation(len(cuts))[:cuts_per_image]
+        cuts = [cuts[idx] for idx in indices]
+        start_points = [start_points[idx] for idx in indices]
+
         # cut corresponding masks and save both cropped images and cropped masks
         for cut_image, start_point in zip(cuts, start_points):
             # cut mask
@@ -86,3 +87,17 @@ def create_validation_data(image_files, mask_files, output_folder_name, window_s
         json.dump(data, fp, indent=4)
 
 
+def main():
+    # get images paths that belong to uncropped validation images
+    data_file_train = os.path.join(paths.DATA_FOLDER_PATH, "data_valid.json")
+    with open(data_file_train, "r") as fp:
+        data_valid = json.load(fp)
+
+    image_files = [os.path.join(paths.DATA_FOLDER_PATH, d[STR.IMAGE_NAME]) for d in data_valid]
+    mask_files = [os.path.join(paths.DATA_FOLDER_PATH, d[STR.MASK_NAME]) for d in data_valid]
+
+    create_validation_data(image_files=image_files, mask_files=mask_files, output_folder_name="validation")
+
+
+if __name__ == "__main__":
+    main()
