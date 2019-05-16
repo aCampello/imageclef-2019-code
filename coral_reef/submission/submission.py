@@ -95,8 +95,6 @@ def create_submission_file(prediction_file_names, output_file_path):
 
                 polygon = _get_contour(cc_mask)
 
-                print("{} points".format(polygon.shape[0]))
-
                 cc_mask = cc_mask / 255
                 confidence = (prediction[:, :, class_id] * cc_mask).sum() / cc_mask.sum()
                 # print("confidence: {:.2f}".format(confidence))
