@@ -105,6 +105,7 @@ def create_submission_file(prediction_file_names, output_file_path):
 
             line += ";"
         line = line[:-1]  # remove last semicolon
+        line += "\n"
         out_lines.append(line)
 
     with open(output_file_path, "w") as fp:
