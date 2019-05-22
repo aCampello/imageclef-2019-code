@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import StrMethodFormatter
 
 from coral_reef.constants import paths
 
@@ -21,7 +22,7 @@ def display_class_distribution(stats_file_paths, include_background=True, subtit
     :return: Nothing
     """
     row_counts = len(stats_file_paths)
-    plt.figure(figsize=(10, 3.2 * row_counts))
+    plt.figure(figsize=(10, 2.2 * row_counts))
     if title:
         plt.title(title)
 
@@ -36,9 +37,9 @@ def display_class_distribution(stats_file_paths, include_background=True, subtit
 
         # get shares for each class
         total = sum([class_stats[c]["share"] for c in classes])
-        counts = {c: class_stats[c]["share"] / total for c in classes}  # make them add up to 1
+        counts = {c: class_stats[c]["share"] / total * 100 for c in classes}  # make them add up to 100
 
-        plt.subplot(row_counts, 1, i + 1)
+        ax = plt.subplot(row_counts, 1, i + 1)
 
         # plot subtitles
         # done like this since it saves space
@@ -55,9 +56,18 @@ def display_class_distribution(stats_file_paths, include_background=True, subtit
         else:
             plt.xticks([])
 
+        plt.yticks([])
+        # ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}%"))
+
         # add text information
         for x, c in enumerate(classes):
-            plt.text(x, counts[c], "{:.3f}%".format(counts[c] * 100), ha="center")
+            if counts[c] == max([counts[c] for c in classes]):
+                plt.text(x, counts[c] * 0.9, "{:.1f}%".format(counts[c]), ha="center", color="w")
+            else:
+                if counts[c] > 0.01:
+                    plt.text(x, counts[c], "{:.2f}%".format(counts[c]), ha="center")
+                else:
+                    plt.text(x, counts[c], "{:.3f}%".format(counts[c]), ha="center")
 
         plt.tight_layout()
 
