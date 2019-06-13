@@ -74,7 +74,7 @@ def calculate_split(mask_folder_path, colour_mapping, training_size=0.85):
     names = list(sorted(mask_stats.keys()))
     classes = list(sorted(colour_mapping.keys()))
 
-    # create a matrix containing the counts
+    # create a matrix containing the counts (meaning the class distribution for each image)
     counts = np.zeros((len(names), len(classes)))
     for i, n in enumerate(names):
         for j, c in enumerate(classes):
@@ -127,12 +127,16 @@ def calculate_split(mask_folder_path, colour_mapping, training_size=0.85):
             best_idx_valid = -1
             temp_min_dist = min_dist
 
+            # go through training and validation indices and get the two indices that result in the smallest
+            # distance of resulting distributions if the indices were swapped
             for idx1 in indices_train:
                 for idx2 in indices_valid:
 
+                    # temporarily swap indices
                     temp_indices_train = [idx for idx in indices_train if idx != idx1] + [idx2]
                     temp_indices_val = [idx for idx in indices_valid if idx != idx2] + [idx1]
 
+                    # calculate distributions and distance
                     distrib_train = counts[temp_indices_train].sum(axis=0)
                     distrib_valid = counts[temp_indices_val].sum(axis=0)
 
@@ -142,7 +146,7 @@ def calculate_split(mask_folder_path, colour_mapping, training_size=0.85):
                         temp_min_dist = distance
                         best_idx_train = idx1
                         best_idx_valid = idx2
-
+            # if a good swap has been found, do it
             if best_idx_valid != -1:
                 # swap indices
                 indices_train = [idx for idx in indices_train if idx != best_idx_train] + [best_idx_valid]

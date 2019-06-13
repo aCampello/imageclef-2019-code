@@ -21,6 +21,24 @@ def display_class_distribution(stats_file_paths, include_background=True, subtit
     displayed
     :return: Nothing
     """
+
+    class_name_converter = {
+        "background": "Background",
+        "c_algae_macro_or_leaves": "Algae - Macro or Leaves",
+        "c_fire_coral_millepora": "Fire Coral - Millepora",
+        "c_hard_coral_boulder": "Hard Coral - Boulder",
+        "c_hard_coral_branching": "Hard Coral - Branching",
+        "c_hard_coral_encrusting": "Hard Coral - Encrusting",
+        "c_hard_coral_foliose": "Hard Coral - Foliose",
+        "c_hard_coral_mushroom": "Hard Coral - Mushroom",
+        "c_hard_coral_submassive": "Hard Coral - Submassive",
+        "c_hard_coral_table": "Hard Coral - Table",
+        "c_soft_coral": "Soft Coral",
+        "c_soft_coral_gorgonian": "Soft Coral - Gorgonian",
+        "c_sponge": "Sponge",
+        "c_sponge_barrel": "Sponge - Barrel"
+    }
+
     row_counts = len(stats_file_paths)
     plt.figure(figsize=(10, 2.2 * row_counts))
     if title:
@@ -51,8 +69,9 @@ def display_class_distribution(stats_file_paths, include_background=True, subtit
                 height=[counts[c] for c in classes])
 
         # only display x ticks for the lowest row
+        x_tick_labels = [class_name_converter[c] for c in classes]
         if i == row_counts - 1:
-            plt.xticks(np.arange(len(classes)), classes, rotation=60)
+            plt.xticks(np.arange(len(classes)), x_tick_labels, rotation=60)
         else:
             plt.xticks([])
 
