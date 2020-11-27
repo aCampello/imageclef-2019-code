@@ -106,6 +106,7 @@ def correct_masks():
         mask = mask[::-1, ::-1, 0]
         cv2.imwrite(path, mask)
 
+
 if __name__ == "__main__":
     create_annotation_masks()
 

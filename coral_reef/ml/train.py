@@ -39,8 +39,22 @@ class Trainer:
 
         :param data_train:
         :param data_valid:
-        :param image_base_dir:
-        :param instructions:
+        :param image_base_dir: A directory with all CLEF images (for training and validating)
+        :param instructions (dict): A dictionary containing instructions to train. It has
+        the following keys:
+            epochs
+            model_name
+            nn_input_shape
+            state_dict_file_path (default = None)
+            crops
+            images_per_batch
+            batch_size
+            backbone (default = resnet)
+            deeplab_output_stride (default = 16)
+            learning_rate (default = 1e-05)
+            multi_gpu (default = False)
+            class_stats_file_path
+            use_lr_scheduler (default = True)
         """
 
         self.image_base_dir = image_base_dir
